@@ -34,7 +34,8 @@ class _HomeScreenState extends State<HomeScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Text(
-                'Categories',
+                'Danh mục',
+                //'Categories',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
             ),
@@ -45,7 +46,8 @@ class _HomeScreenState extends State<HomeScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Text(
-                'Recommended Products',
+                'Sản phẩm đề xuất',
+              //  'Recommended Products',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
             ),
@@ -62,9 +64,9 @@ class _HomeScreenState extends State<HomeScreen> {
           });
         },
         items: [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.shopping_cart), label: 'Cart'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Trang chủ'),
+          BottomNavigationBarItem(icon: Icon(Icons.star), label: 'Yêu thích'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Hồ sơ'),
         ],
       ),
     );
@@ -128,32 +130,45 @@ class _EventBannerState extends State<EventBanner> {
   }
 }
 
-
 class CategorySection extends StatelessWidget {
-  final List<String> _categories = ['Electronics', 'Fashion', 'Home', 'Beauty', 'Toys'];
+  final List<Map<String, dynamic>> _categories = [
+    {'name': 'Tất cả', 'icon': Icons.all_inclusive},
+    {'name': 'Chăm sóc da', 'icon': Icons.face_4},
+    {'name': 'Trang điểm', 'icon': Icons.brush},
+    {'name': 'Tẩy trang', 'icon': Icons.water_drop},
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 100,
+      height: 120, // 카테고리 섹션 높이
       child: ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 16), // 왼쪽과 오른쪽 여백 추가
         scrollDirection: Axis.horizontal,
         itemCount: _categories.length,
         itemBuilder: (context, index) {
           return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.center, // 세로 가운데 정렬
               children: [
                 CircleAvatar(
                   radius: 30,
                   backgroundColor: Colors.blue,
-                  child: Text(
-                    _categories[index][0],
-                    style: TextStyle(fontSize: 24, color: Colors.white),
+                  child: Center( // 아이콘을 CircleAvatar의 중심에 배치
+                    child: Icon(
+                      _categories[index]['icon'], // 아이콘 표시
+                      size: 28, // 아이콘 크기를 조정
+                      color: Colors.white,
+                    ),
                   ),
                 ),
-                SizedBox(height: 8),
-                Text(_categories[index]),
+                SizedBox(height: 8), // 아이콘과 텍스트 사이 간격
+                Text(
+                  _categories[index]['name'], // 카테고리 이름 표시
+                  textAlign: TextAlign.center, // 텍스트 가운데 정렬
+                  style: TextStyle(fontSize: 14), // 텍스트 크기 조정
+                ),
               ],
             ),
           );
@@ -163,11 +178,16 @@ class CategorySection extends StatelessWidget {
   }
 }
 
+
+
+
+
 class ProductSection extends StatelessWidget {
   final List<Map<String, String>> _products = [
-    {'name': 'Product 1', 'price': '\$100', 'image': 'https://via.placeholder.com/100'},
-    {'name': 'Product 2', 'price': '\$200', 'image': 'https://via.placeholder.com/100'},
-    {'name': 'Product 3', 'price': '\$300', 'image': 'https://via.placeholder.com/100'},
+    {'name': 'Torriden Serum', 'price': '\đ 120,000', 'image': 'https://hongin-lim.github.io/vn_project/images/prducts/torriden.jpg'},
+    {'name': 'Bioderma', 'price': '\đ 400,000', 'image': 'https://hongin-lim.github.io/vn_project/images/prducts/bioderma.jpg'},
+    {'name': 'goodal Serum', 'price': '\đ 70,000', 'image': 'https://hongin-lim.github.io/vn_project/images/prducts/goodal2.jpg'},
+    {'name': 'Wellage AMPOULE', 'price': '\đ 550,000', 'image': 'https://hongin-lim.github.io/vn_project/images/prducts/Wellage.jpg'},
   ];
 
   @override
