@@ -78,10 +78,12 @@ class EventBanner extends StatefulWidget {
 
 class _EventBannerState extends State<EventBanner> {
   int _currentBannerIndex = 0;
+
+  // 새 이미지 경로로 리스트 업데이트
   final List<String> _bannerImages = [
-    'https://via.placeholder.com/400x200?text=Event+1',
-    'https://via.placeholder.com/400x200?text=Event+2',
-    'https://via.placeholder.com/400x200?text=Event+3',
+    'https://hongin-lim.github.io/vn_project/images/event1.jpg',
+    'https://hongin-lim.github.io/vn_project/images/event2.jpg',
+    'https://hongin-lim.github.io/vn_project/images/event3.jpg',
   ];
 
   @override
@@ -89,7 +91,7 @@ class _EventBannerState extends State<EventBanner> {
     return Column(
       children: [
         AspectRatio(
-          aspectRatio: 16 / 9,
+          aspectRatio: 16 / 9, // 슬라이드 비율 (16:9)
           child: PageView.builder(
             onPageChanged: (index) {
               setState(() {
@@ -125,6 +127,7 @@ class _EventBannerState extends State<EventBanner> {
     );
   }
 }
+
 
 class CategorySection extends StatelessWidget {
   final List<String> _categories = ['Electronics', 'Fashion', 'Home', 'Beauty', 'Toys'];
