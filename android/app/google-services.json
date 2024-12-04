@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "777692029381",
+    "project_id": "vn-project-bed5c",
+    "storage_bucket": "vn-project-bed5c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:777692029381:android:0901d0d8511c349181ebac",
+        "android_client_info": {
+          "package_name": "com.vn.beautiq"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB-9tj1jGSDvHkPEA9Ux4wjvOk1VfJx2n8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

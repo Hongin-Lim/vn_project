@@ -1,4 +1,4 @@
-package com.example.vn_project
+package com.vn.beautiq
 
 import io.flutter.embedding.android.FlutterActivity
 
