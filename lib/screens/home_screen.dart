@@ -17,7 +17,7 @@ class _HomeScreenState extends State<HomeScreen> {
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('베트남 화장품 프로젝트 Mall', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+            Text('BeautiQ', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
             Icon(Icons.search, size: 28),
           ],
         ),
@@ -81,9 +81,9 @@ class _EventBannerState extends State<EventBanner> {
 
   // 새 이미지 경로로 리스트 업데이트
   final List<String> _bannerImages = [
-    'https://hongin-lim.github.io/vn_project/images/event1.jpg',
-    'https://hongin-lim.github.io/vn_project/images/event2.jpg',
-    'https://hongin-lim.github.io/vn_project/images/event3.jpg',
+    'https://hongin-lim.github.io/vn_project/images/slide-001.png',
+    'https://hongin-lim.github.io/vn_project/images/slide-002.png',
+    // 'https://hongin-lim.github.io/vn_project/images/event3.jpg',
   ];
 
   @override
