@@ -34,9 +34,19 @@ dependencies:
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
+  image_picker: ^0.8.7+3 # 안드 ios 모바일에서 사용
   cupertino_icons: ^1.0.8
   firebase_storage: ^12.3.6
   firebase_core: ^3.8.0
+  firebase_auth: ^5.3.3
+  cloud_firestore: ^5.4.3
+#  html: ^0.15.0  # 웹에서 파일 업로드를 위해 html 패키지 추가
+  file_picker: ^5.0.1  # 파일 선택을 위한 file_picker 패키지 추가
+  flutter_rating_bar: ^4.0.0  # 별점을 위한 패키지 추가
+  multi_select_flutter: ^4.0.0
+  google_fonts: ^5.1.0  # Material Design 폰트 사용을 위한 패키지
+  shimmer: ^3.0.0      # 로딩 상태에 반짝이는 효과를 주는 패키지
+  carousel_slider: ^4.2.1  # 이미지/위젯 슬라이더 구현을 위한 패키지
 
 dev_dependencies:
   flutter_test:

@@ -17,10 +17,7 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      throw UnsupportedError(
-        'DefaultFirebaseOptions have not been configured for web - '
-        'you can reconfigure this by running the FlutterFire CLI again.',
-      );
+      return web;
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -29,18 +26,18 @@ class DefaultFirebaseOptions {
         return ios;
       case TargetPlatform.macOS:
         throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for macos - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
+          'DefaultFirebaseOptions have not been configured for macOS - '
+              'you can reconfigure this by running the FlutterFire CLI again.',
         );
       case TargetPlatform.windows:
         throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for windows - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
+          'DefaultFirebaseOptions have not been configured for Windows - '
+              'you can reconfigure this by running the FlutterFire CLI again.',
         );
       case TargetPlatform.linux:
         throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for linux - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
+          'DefaultFirebaseOptions have not been configured for Linux - '
+              'you can reconfigure this by running the FlutterFire CLI again.',
         );
       default:
         throw UnsupportedError(
@@ -49,21 +46,30 @@ class DefaultFirebaseOptions {
     }
   }
 
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: "AIzaSyCma1lBaGJ_96iAKX5HKTS0AzcPLUBK-ig",
+    authDomain: "vn-project-bed5c.firebaseapp.com",
+    projectId: "vn-project-bed5c",
+    storageBucket: "vn-project-bed5c.firebasestorage.app",
+    messagingSenderId: "777692029381",
+    appId: "1:777692029381:web:da6f14e4639bdd7581ebac",
+    measurementId: "G-2ST1LMX4RS",
+  );
+
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyB-9tj1jGSDvHkPEA9Ux4wjvOk1VfJx2n8',
-    appId: '1:777692029381:android:0901d0d8511c349181ebac',
-    messagingSenderId: '777692029381',
-    projectId: 'vn-project-bed5c',
-    storageBucket: 'vn-project-bed5c.firebasestorage.app',
+    apiKey: "AIzaSyCma1lBaGJ_96iAKX5HKTS0AzcPLUBK-ig",
+    appId: "1:777692029381:android:da6f14e4639bdd7581ebac",
+    messagingSenderId: "777692029381",
+    projectId: "vn-project-bed5c",
+    storageBucket: "vn-project-bed5c.firebasestorage.app",
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyAsaE6R0d5ogxPOL2OkhDWHss3EIpYKBiU',
-    appId: '1:777692029381:ios:d50b1a43d037885681ebac',
-    messagingSenderId: '777692029381',
-    projectId: 'vn-project-bed5c',
-    storageBucket: 'vn-project-bed5c.firebasestorage.app',
-    iosBundleId: 'com.example.vnProject',
+    apiKey: "AIzaSyCma1lBaGJ_96iAKX5HKTS0AzcPLUBK-ig",
+    appId: "1:777692029381:ios:da6f14e4639bdd7581ebac",
+    messagingSenderId: "777692029381",
+    projectId: "vn-project-bed5c",
+    storageBucket: "vn-project-bed5c.firebasestorage.app",
+    iosBundleId: "com.example.vnProject",
   );
-
 }
