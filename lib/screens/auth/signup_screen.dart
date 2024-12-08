@@ -59,7 +59,6 @@ class _SignupScreenState extends State<SignupScreen> {
       if (user != null) {
         // Firestore에 사용자 정보 저장
         final newUser = UserModel(
-          id: user.uid,
           email: _emailController.text.trim(),
           username: _usernameController.text.trim(),
           gender: _selectedGender,

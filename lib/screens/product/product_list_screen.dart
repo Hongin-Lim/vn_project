@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'product_detail_screen.dart';
 
@@ -28,7 +29,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
   }
 
   Future<void> _loadProducts() async {
-    if (_isLoading) return;  // 로딩 중이라면 추가 요청을 하지 않도록
+    if (_isLoading) return;
 
     setState(() {
       _isLoading = true;
@@ -79,163 +80,269 @@ class _ProductListScreenState extends State<ProductListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.white,
-        title: Text(
-          widget.category ?? '상품 목록',
-          style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-            fontSize: 24,
-          ),
-        ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.filter_alt_outlined, color: Colors.black),
-            onPressed: () {},
-          ),
-        ],
+    return Theme(
+      data: Theme.of(context).copyWith(
+        textTheme: GoogleFonts.robotoTextTheme(Theme.of(context).textTheme),
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 검색창
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: '상품 검색...',
-                hintStyle: TextStyle(color: Colors.grey[600]),
-                prefixIcon: Icon(Icons.search, color: Colors.grey[600]),
-                filled: true,
-                fillColor: Colors.grey[200],
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: EdgeInsets.symmetric(vertical: 14),
-              ),
-              onChanged: (value) => _filterProducts(value),
+      child: Scaffold(
+        appBar: AppBar(
+          elevation: 0,
+          backgroundColor: Colors.white,
+          title: Text(
+            widget.category ?? '상품 목록',
+            style: GoogleFonts.roboto(
+              color: Colors.black87,
+              fontWeight: FontWeight.bold,
+              fontSize: 22,
+              letterSpacing: -0.5,
             ),
           ),
-          // 필터 드롭다운
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Row(
-              children: [
-                const Text(
-                  "정렬 기준: ",
-                  style: TextStyle(fontSize: 16, color: Colors.grey),
-                ),
-                const SizedBox(width: 10),
-                DropdownButton<String>(
-                  value: _currentFilter,
-                  items: const [
-                    DropdownMenuItem(value: "Phổ biến", child: Text("Phổ biến")),
-                    DropdownMenuItem(value: "Nhiều đánh giá", child: Text("Nhiều đánh giá")),
-                    DropdownMenuItem(value: "Mới nhất", child: Text("Mới nhất")),
-                  ],
-                  onChanged: (value) {
-                    if (value != null) {
-                      _applyFilter(value);
-                    }
-                  },
-                  style: TextStyle(fontSize: 16, color: Colors.black),
-                  underline: SizedBox(),
-                ),
-              ],
+          centerTitle: true,
+          actions: [
+            IconButton(
+              icon: Icon(Icons.filter_alt_outlined, color: Colors.black87),
+              onPressed: () {},
             ),
-          ),
-          const SizedBox(height: 10),
-          // 상품 그리드
-          Expanded(
-            child: _filteredProducts.isEmpty
-                ? const Center(child: Text('상품이 없습니다.'))
-                : GridView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                childAspectRatio: 0.7,
-                mainAxisSpacing: 16,
-                crossAxisSpacing: 16,
+          ],
+        ),
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: '상품 검색...',
+                  hintStyle: GoogleFonts.roboto(
+                    color: Colors.grey[600],
+                    fontSize: 15,
+                  ),
+                  prefixIcon: Icon(Icons.search, color: Colors.grey[600], size: 22),
+                  filled: true,
+                  fillColor: Colors.grey[100],
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(15),
+                    borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(15),
+                    borderSide: BorderSide(color: Colors.grey[200]!, width: 1),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(15),
+                    borderSide: BorderSide(color: Colors.grey[400]!, width: 1),
+                  ),
+                  contentPadding: EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                ),
+                onChanged: (value) => _filterProducts(value),
               ),
-              itemCount: _filteredProducts.length,
-              itemBuilder: (context, index) {
-                final product = _filteredProducts[index];
-                final productData = product.data() as Map<String, dynamic>;
-
-                return GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ProductDetailScreen(productId: product.id),
-                      ),
-                    );
-                  },
-                  child: Card(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Row(
+                children: [
+                  Text(
+                    "정렬 기준: ",
+                    style: GoogleFonts.roboto(
+                      fontSize: 15,
+                      color: Colors.grey[700],
+                      fontWeight: FontWeight.w500,
                     ),
-                    elevation: 4,
-                    child: Column(
-                      children: [
-                        Expanded(
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Image.network(
-                              productData['imageUrl'] ?? '',
-                              fit: BoxFit.cover,
+                  ),
+                  const SizedBox(width: 10),
+                  DropdownButton<String>(
+                    value: _currentFilter,
+                    items: [
+                      DropdownMenuItem(
+                        value: "Phổ biến",
+                        child: Text(
+                          "Phổ biến",
+                          style: GoogleFonts.roboto(),
+                        ),
+                      ),
+                      DropdownMenuItem(
+                        value: "Nhiều đánh giá",
+                        child: Text(
+                          "Nhiều đánh giá",
+                          style: GoogleFonts.roboto(),
+                        ),
+                      ),
+                      DropdownMenuItem(
+                        value: "Mới nhất",
+                        child: Text(
+                          "Mới nhất",
+                          style: GoogleFonts.roboto(),
+                        ),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) {
+                        _applyFilter(value);
+                      }
+                    },
+                    style: GoogleFonts.roboto(
+                      fontSize: 15,
+                      color: Colors.black87,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    underline: SizedBox(),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+            Expanded(
+              child: _filteredProducts.isEmpty
+                  ? Center(
+                child: Text(
+                  '상품이 없습니다.',
+                  style: GoogleFonts.roboto(
+                    fontSize: 16,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              )
+                  : GridView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  childAspectRatio: 0.7,
+                  mainAxisSpacing: 16,
+                  crossAxisSpacing: 16,
+                ),
+                itemCount: _filteredProducts.length,
+                itemBuilder: (context, index) {
+                  final product = _filteredProducts[index];
+                  final productData = product.data() as Map<String, dynamic>;
+
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              ProductDetailScreen(productId: product.id),
+                        ),
+                      );
+                    },
+                    child: Card(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      elevation: 2,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Stack(
+                              children: [
+                                Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.vertical(
+                                      top: Radius.circular(15),
+                                    ),
+                                    image: DecorationImage(
+                                      image: NetworkImage(
+                                        productData['imageUrl'] ?? '',
+                                      ),
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                ),
+                                Positioned(
+                                  bottom: 0,
+                                  left: 0,
+                                  right: 0,
+                                  height: 40,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topCenter,
+                                        end: Alignment.bottomCenter,
+                                        colors: [
+                                          Colors.transparent,
+                                          Colors.black.withOpacity(0.3),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          productData['name'] ?? '상품 이름 없음',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '₩${productData['price'] ?? '알 수 없음'}',
-                          style: TextStyle(color: Colors.grey[700]),
-                        ),
-                      ],
+                          Padding(
+                            padding: const EdgeInsets.all(12.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  productData['name'] ?? '상품 이름 없음',
+                                  style: GoogleFonts.roboto(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15,
+                                    color: Colors.black87,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
+                                const SizedBox(height: 6),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.star,
+                                      size: 16,
+                                      color: Colors.amber,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '${productData['reviewCount'] ?? 0}개의 리뷰',
+                                      style: GoogleFonts.roboto(
+                                        fontSize: 13,
+                                        color: Colors.grey[600],
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
-          ),
-          // 로딩 스피너
-          if (_isLoading)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              child: Center(child: CircularProgressIndicator()),
-            ),
-          // 더 보기 버튼
-          if (_lastDocument != null)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              child: Center(
-                child: ElevatedButton(
-                  onPressed: _loadProducts,
-                  child: Text('더 보기'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+            if (_isLoading)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Center(child: CircularProgressIndicator()),
+              ),
+            if (_lastDocument != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Center(
+                  child: TextButton(
+                    onPressed: _loadProducts,
+                    child: Text(
+                      '더 보기',
+                      style: GoogleFonts.notoSans(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }

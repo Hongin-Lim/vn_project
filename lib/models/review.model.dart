@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// 리뷰 데이터 모델
 class Review {
-  final String id; // 리뷰 ID
   final String productId; // 리뷰가 작성된 제품 ID
   final String userId; // 작성자 ID
   final String title; // 리뷰 제목
@@ -12,10 +11,9 @@ class Review {
   final DateTime createdAt; // 작성 시간
 
   Review({
-    required this.id,
     required this.productId,
     required this.userId,
-    required this.title, // 제목 필드 추가
+    required this.title,
     required this.content,
     required this.rating,
     this.photoUrls = const [], // 기본값: 빈 리스트
@@ -26,7 +24,6 @@ class Review {
   factory Review.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data()!;
     return Review(
-      id: doc.id,
       productId: data['productId'],
       userId: data['userId'],
       title: data['title'], // Firestore에서 제목 가져오기
@@ -42,10 +39,10 @@ class Review {
     return {
       'productId': productId,
       'userId': userId,
-      'title': title, // Firestore에 제목 저장
+      'title': title,
       'content': content,
       'rating': rating,
-      'photoUrls': photoUrls, // 사진 URL 목록
+      'photoUrls': photoUrls,
       'createdAt': FieldValue.serverTimestamp(), // Firestore 서버 시간
     };
   }

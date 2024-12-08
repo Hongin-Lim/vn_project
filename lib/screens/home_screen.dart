@@ -9,7 +9,9 @@ import 'package:shimmer/shimmer.dart';
 import 'package:vn_project/screens/product/add_product_screen.dart';
 import 'package:vn_project/screens/review/review_detail_screen.dart';
 
-import '../backup/product_list_screen_backup.dart';
+import 'product/product_list_screen.dart';
+
+
 
 // 반응형 유틸리티 클래스
 class ResponsiveBreakpoints {
@@ -399,7 +401,25 @@ class CategorySection extends StatelessWidget {
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: isDesktop ? 5 : 3,
+          crossAxisCount: isDesktop ? 5 : 3, // 데스크탑에서는 5개, 태블릿은 3개로 설정
+          childAspectRatio: 1.2,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+        ),
+        itemCount: categories.length,
+        itemBuilder: (context, index) => _buildCategoryItem(
+          context,
+          categories[index],
+          isDesktop,
+        ),
+      );
+    } else {
+      // 모바일 화면에서는 열 수를 1개 또는 2개로 설정
+      return GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 3, // 모바일에서는 1개씩
           childAspectRatio: 1.2,
           crossAxisSpacing: 16,
           mainAxisSpacing: 16,
@@ -437,7 +457,7 @@ class CategorySection extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => ProductListScreen(),
+              builder: (context) => ProductListScreen(category: category['name'] as String),
             ),
           );
         },

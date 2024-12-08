@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// 제품 데이터 모델
 class Product {
-  final String id; // 제품 ID
   final String name; // 제품 이름
   final String description; // 제품 설명
   final String imageUrl; // 제품 이미지 URL
@@ -11,7 +10,6 @@ class Product {
   final double averageRating; // 평균 평점
 
   Product({
-    required this.id,
     required this.name,
     required this.description,
     required this.imageUrl,
@@ -24,7 +22,6 @@ class Product {
   factory Product.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data()!;
     return Product(
-      id: doc.id,
       name: data['name'],
       description: data['description'],
       imageUrl: data['imageUrl'],

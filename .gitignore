@@ -46,3 +46,5 @@ app.*.map.json
 .firebaserc
 *-dedug.log
 /firebase-data
+.firebase/hosting.*
+

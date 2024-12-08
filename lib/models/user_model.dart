@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// 사용자 모델 - Firestore와 연동되는 데이터 클래스
 class UserModel {
-  final String id; // 사용자 고유 ID (Firestore 문서 ID)
   final String email; // 이메일 주소
   final String phoneNumber; // 전화번호
   final String username; // 사용자 이름 (닉네임)
@@ -20,29 +19,27 @@ class UserModel {
   final String role; // 사용자 역할 (예: 'user', 'admin', 'moderator')
 
   UserModel({
-    required this.id,
     required this.email,
-    this.phoneNumber = '', // 기본값: 빈 문자열
+    this.phoneNumber = '',
     required this.username,
     required this.gender,
     required this.age,
     required this.region,
-    required this.skinType, // 단일 선택
-    this.skinConditions = const [], // 기본값: 빈 리스트 (다중 선택)
-    this.profileImageUrl = '', // 기본값: 빈 문자열
-    this.icon = '', // 기본값: 빈 문자열 (선택된 아이콘/이모티콘)
+    required this.skinType,
+    this.skinConditions = const [],
+    this.profileImageUrl = '',
+    this.icon = '',
     required this.createdAt,
     required this.lastLoginAt,
-    this.likedReviews = const [], // 기본값: 빈 리스트
-    this.favoriteProducts = const [], // 기본값: 빈 리스트
-    required this.role, // 역할 추가
+    this.likedReviews = const [],
+    this.favoriteProducts = const [],
+    required this.role,
   });
 
   /// Firestore에서 데이터를 가져와 UserModel로 변환
   factory UserModel.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data()!;
     return UserModel(
-      id: doc.id,
       email: data['email'],
       phoneNumber: data['phoneNumber'] ?? '',
       username: data['username'],
