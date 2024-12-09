@@ -80,16 +80,18 @@ class _HomeScreenState extends State<HomeScreen> {
     final isDesktopView = ResponsiveBreakpoints.isDesktop(context);
     final isTabletView = ResponsiveBreakpoints.isTablet(context);
 
+    // 텍스트로 된 로고
     return Scaffold(
         backgroundColor: Colors.grey[50],
         appBar: AppBar(
         elevation: 0,
         title: Text(
         'Review Này',
-        style: GoogleFonts.roboto(
-        fontSize: isDesktopView ? 28 : 24,
+        style: GoogleFonts.dancingScript(
+        // fontSize: isDesktopView ? 28 : 24,\
+          fontSize: isDesktopView ? 36 : 32, // 글씨 크기를 더 키움
         fontWeight: FontWeight.bold,
-        color: Colors.black,
+        color: Color(0xFFfa6386),
     ),
     ),
     backgroundColor: Colors.white,
@@ -116,17 +118,17 @@ class _HomeScreenState extends State<HomeScreen> {
     ),
     ),
     ),
-    TextButton(
-    onPressed: () => Navigator.pushNamed(context, '/signup'),
-    child: Text(
-    'Sign Up',
-    style: GoogleFonts.notoSans(
-    color: Colors.deepPurple,
-    fontWeight: FontWeight.bold,
-    fontSize: isDesktopView ? 16 : 14,
-    ),
-    ),
-    ),
+    // TextButton(
+    // onPressed: () => Navigator.pushNamed(context, '/signup'),
+    // child: Text(
+    // 'Sign Up',
+    // style: GoogleFonts.notoSans(
+    // color: Colors.deepPurple,
+    // fontWeight: FontWeight.bold,
+    // fontSize: isDesktopView ? 16 : 14,
+    // ),
+    // ),
+    // ),
     ],
     ),
     ],
@@ -701,39 +703,117 @@ class RecentReviewsSection extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  CircleAvatar(
-                    backgroundColor: Colors.deepPurple[100],
-                    child: const Icon(Icons.person, color: Colors.deepPurple),
-                    radius: isDesktop ? 24 : 20,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+              FutureBuilder<DocumentSnapshot>(
+                future: FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(review['userId'])
+                    .get(),
+                builder: (context, snapshot) {
+                  print('User snapshot data: ${snapshot.data?.data()}');
+
+                  // DocumentSnapshot을 Map으로 변환할 때 명시적으로 모든 필드를 포함
+                  final userData = snapshot.data?.data() as Map<String, dynamic>?;
+
+                  // 디버깅을 위한 더 자세한 로그
+                  if (userData != null) {
+                    print('All user fields: ${userData.keys.toList()}');
+                    print('Icon field specifically: ${userData['icon']}');
+                    print('Icon field type: ${userData['icon']?.runtimeType}');
+                  }
+
+                  if (snapshot.hasError) {
+                    print('Error fetching user data: ${snapshot.error}');
+                    return Row(
                       children: [
-                        if (productName != null)
-                          Text(
-                            productName,
-                            style: GoogleFonts.notoSans(
-                              fontWeight: FontWeight.bold,
-                              fontSize: isDesktop ? 18 : 16,
-                              color: Colors.deepPurple,
-                            ),
-                          ),
-                        Text(
-                          review['title'] ?? '',
-                          style: GoogleFonts.notoSans(
-                            fontWeight: FontWeight.w500,
-                            fontSize: isDesktop ? 16 : 14,
-                            color: Colors.black87,
+                        CircleAvatar(
+                          backgroundColor: Colors.deepPurple[100],
+                          radius: isDesktop ? 24 : 20,
+                          child: Text('!', style: TextStyle(color: Colors.deepPurple)),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Error loading user data',
+                            style: GoogleFonts.notoSans(color: Colors.red),
                           ),
                         ),
                       ],
-                    ),
-                  ),
-                ],
+                    );
+                  }
+
+                  if (!snapshot.hasData) {
+                    return Row(
+                      children: [
+                        CircleAvatar(
+                          backgroundColor: Colors.deepPurple[100],
+                          radius: isDesktop ? 24 : 20,
+                          child: const CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            strokeWidth: 2,
+                          ),
+                        ),
+                      ],
+                    );
+                  }
+
+                  return Row(
+                    children: [
+                      CircleAvatar(
+                        backgroundColor: Colors.deepPurple[100],
+                        // backgroundImage: (userData != null &&
+                        //     userData['profileImageUrl'] != null &&
+                        //     userData['profileImageUrl'].toString().isNotEmpty)
+                        //     ? NetworkImage(userData['profileImageUrl'])
+                        //     : null,
+                        radius: isDesktop ? 24 : 20,
+                        child: (userData == null ||
+                            userData['profileImageUrl'] == null ||
+                            userData['profileImageUrl'].toString().isEmpty)
+                            ? Text(
+                          userData?['icon'] ?? '👤',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: isDesktop ? 20 : 16,
+                          ),
+                        )
+                            : null,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (productName != null)
+                              Text(
+                                productName,
+                                style: GoogleFonts.notoSans(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: isDesktop ? 18 : 16,
+                                  color: Colors.deepPurple,
+                                ),
+                              ),
+                            Text(
+                              review['title'] ?? '',
+                              style: GoogleFonts.notoSans(
+                                fontWeight: FontWeight.w500,
+                                fontSize: isDesktop ? 16 : 14,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            if (userData != null)
+                              Text(
+                                userData['username'] ?? 'Anonymous User',
+                                style: GoogleFonts.notoSans(
+                                  fontSize: isDesktop ? 14 : 12,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
               const SizedBox(height: 12),
               RatingBar.builder(

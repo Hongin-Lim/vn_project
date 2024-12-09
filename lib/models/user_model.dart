@@ -17,6 +17,7 @@ class UserModel {
   final List<String> likedReviews; // 사용자가 좋아요한 리뷰 ID 목록
   final List<String> favoriteProducts; // 즐겨찾기한 상품 ID 목록
   final String role; // 사용자 역할 (예: 'user', 'admin', 'moderator')
+  final String grade; // 사용자 등급 (예: 'Bronze', 'Silver', 'Gold', 'Platinum')
 
   UserModel({
     required this.email,
@@ -34,6 +35,7 @@ class UserModel {
     this.likedReviews = const [],
     this.favoriteProducts = const [],
     required this.role,
+    this.grade = 'regular', // 기본값: 'regular'
   });
 
   /// Firestore에서 데이터를 가져와 UserModel로 변환
@@ -55,6 +57,7 @@ class UserModel {
       likedReviews: List<String>.from(data['likedReviews'] ?? []),
       favoriteProducts: List<String>.from(data['favoriteProducts'] ?? []),
       role: data['role'] ?? 'user', // 역할 가져오기 (기본값: 'user')
+      grade: data['grade'] ?? 'regular', // 등급 가져오기 (기본값: 'regular')
     );
   }
 
@@ -76,6 +79,7 @@ class UserModel {
       'likedReviews': likedReviews,
       'favoriteProducts': favoriteProducts,
       'role': role, // 역할 저장
+      'grade': grade, // 등급 저장
     };
   }
 }

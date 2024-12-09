@@ -265,11 +265,55 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     .orderBy('createdAt', descending: true)
                     .snapshots(),
                 builder: (context, snapshot) {
+                  print('Connection state: ${snapshot.connectionState}');
+                  print('Has data: ${snapshot.hasData}');
+                  if (snapshot.hasData) {
+                    print('Documents count: ${snapshot.data!.docs.length}');
+                    print('ProductId being queried: ${widget.productId}');
+                  }
+
+                  if (snapshot.hasError) {
+                    print('Stream error: ${snapshot.error}');
+                    return Center(
+                      child: Text(
+                        '데이터를 불러오는데 실패했습니다.',
+                        style: GoogleFonts.roboto(color: Colors.red),
+                      ),
+                    );
+                  }
+
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
                   }
 
-                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  if (!snapshot.hasData) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24.0),
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.rate_review_outlined,
+                              size: 48,
+                              color: Colors.grey[400],
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              '리뷰를 불러오는 중입니다...',
+                              style: GoogleFonts.roboto(
+                                fontSize: 16,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+
+                  final reviews = snapshot.data!.docs;
+
+                  if (reviews.isEmpty) {
                     return Center(
                       child: Padding(
                         padding: const EdgeInsets.all(24.0),
@@ -294,129 +338,142 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     );
                   }
 
-                  final reviews = snapshot.data!.docs;
-
                   return ListView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: reviews.length,
+                    padding: const EdgeInsets.all(16),
                     itemBuilder: (context, index) {
                       final review = reviews[index].data() as Map<String, dynamic>;
+                      final createdAt = review['createdAt'] as Timestamp?;
 
                       return Card(
-                        margin: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
+                        margin: const EdgeInsets.only(bottom: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                         elevation: 0,
-                        child: InkWell(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ReviewDetailScreen(
-                                  reviewId: reviews[index].id,
-                                ),
-                              ),
-                            );
-                          },
-                          borderRadius: BorderRadius.circular(12),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    const CircleAvatar(
-                                      radius: 16,
-                                      backgroundColor: Colors.grey,
-                                      child: Icon(
-                                        Icons.person,
-                                        color: Colors.white,
-                                        size: 20,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      review['title'] ?? '제목 없음',
+                                      style: GoogleFonts.roboto(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
                                       ),
+                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            review['title'] ?? '제목 없음',
-                                            style: GoogleFonts.roboto(
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 2),
-                                          Row(
-                                            children: [
-                                              const Icon(
-                                                Icons.star,
-                                                size: 16,
-                                                color: Colors.amber,
-                                              ),
-                                              const SizedBox(width: 4),
-                                              Text(
-                                                '${review['rating']?.toString() ?? '0'}',
-                                                style: GoogleFonts.roboto(
-                                                  color: Colors.grey,
-                                                  fontSize: 14,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  review['content'] ?? '내용 없음',
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.roboto(
-                                    color: Colors.black87,
-                                    height: 1.4,
                                   ),
-                                ),
-                                if ((review['photoUrls'] as List?)?.isNotEmpty ?? false) ...[
-                                  const SizedBox(height: 12),
-                                  SizedBox(
-                                    height: 80,
-                                    child: ListView.builder(
-                                      scrollDirection: Axis.horizontal,
-                                      itemCount: (review['photoUrls'] as List).length,
-                                      itemBuilder: (context, photoIndex) {
-                                        return Padding(
-                                          padding: const EdgeInsets.only(right: 8.0),
-                                          child: ClipRRect(
-                                            borderRadius: BorderRadius.circular(8),
-                                            child: Image.network(
-                                              review['photoUrls'][photoIndex],
-                                              width: 80,
-                                              height: 80,
-                                              fit: BoxFit.cover,
-                                            ),
-                                          ),
-                                        );
-                                      },
+                                  Row(
+                                    children: List.generate(
+                                      5,
+                                          (index) => Icon(
+                                        index < (review['rating'] ?? 0)
+                                            ? Icons.star
+                                            : Icons.star_border,
+                                        color: Colors.amber,
+                                        size: 16,
+                                      ),
                                     ),
                                   ),
                                 ],
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                review['content'] ?? '내용 없음',
+                                style: GoogleFonts.roboto(
+                                  fontSize: 14,
+                                  color: Colors.grey[700],
+                                  height: 1.5,
+                                ),
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              if ((review['photoUrls'] as List?)?.isNotEmpty ?? false) ...[
+                                const SizedBox(height: 12),
+                                SizedBox(
+                                  height: 80,
+                                  child: ListView.builder(
+                                    scrollDirection: Axis.horizontal,
+                                    itemCount: (review['photoUrls'] as List).length,
+                                    itemBuilder: (context, photoIndex) {
+                                      return Padding(
+                                        padding: const EdgeInsets.only(right: 8),
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(8),
+                                          child: Image.network(
+                                            review['photoUrls'][photoIndex],
+                                            width: 80,
+                                            height: 80,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (context, error, stackTrace) {
+                                              return Container(
+                                                width: 80,
+                                                height: 80,
+                                                color: Colors.grey[200],
+                                                child: Icon(
+                                                  Icons.error_outline,
+                                                  color: Colors.grey[400],
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
                               ],
-                            ),
+                              if (createdAt != null) ...[
+                                const SizedBox(height: 8),
+                                Text(
+                                  '작성일: ${createdAt.toDate().toString().split(' ')[0]}',
+                                  style: GoogleFonts.roboto(
+                                    fontSize: 12,
+                                    color: Colors.grey[500],
+                                  ),
+                                ),
+                              ],
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => ReviewDetailScreen(
+                                            reviewId: reviews[index].id,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    style: TextButton.styleFrom(
+                                      foregroundColor: Colors.indigo,
+                                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                                    ),
+                                    child: Text(
+                                      '자세히 보기',
+                                      style: GoogleFonts.roboto(fontSize: 12),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                         ),
                       );
                     },
                   );
                 },
-              ),
+              )
             ],
           ),
         ),

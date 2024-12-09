@@ -195,9 +195,28 @@ class _AddReviewScreenState extends State<AddReviewScreen> {
 
       // User 문서 업데이트
       final userRef = _firestore.collection('users').doc(currentUser.uid);
-      await userRef.update({
-        'likedReviews': FieldValue.arrayUnion([reviewRef.id]),
-      });
+      try {
+        // 문서가 존재하는지 먼저 확인
+        final userDoc = await userRef.get();
+        if (!userDoc.exists) {
+          // 문서가 없으면 새로 생성
+          await userRef.set({
+            'likedReviews': [reviewRef.id],
+            'uid': currentUser.uid,
+            // 필요한 다른 사용자 정보도 추가
+            'email': currentUser.email,
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+        } else {
+          // 문서가 있으면 업데이트
+          await userRef.update({
+            'likedReviews': FieldValue.arrayUnion([reviewRef.id]),
+          });
+        }
+      } catch (e) {
+        print('Error updating user document: $e');
+        // 에러 처리
+      }
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
