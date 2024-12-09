@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../utils/grade_utils.dart';
 import '../product/ingredient_analysis_screen.dart';
 import '../review/add_review_screen.dart';
 import '../review/review_detail_screen.dart';
@@ -347,104 +348,256 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       final review = reviews[index].data() as Map<String, dynamic>;
                       final createdAt = review['createdAt'] as Timestamp?;
 
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      review['title'] ?? '제목 없음',
-                                      style: GoogleFonts.roboto(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  Row(
-                                    children: List.generate(
-                                      5,
-                                          (index) => Icon(
-                                        index < (review['rating'] ?? 0)
-                                            ? Icons.star
-                                            : Icons.star_border,
-                                        color: Colors.amber,
-                                        size: 16,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                review['content'] ?? '내용 없음',
-                                style: GoogleFonts.roboto(
-                                  fontSize: 14,
-                                  color: Colors.grey[700],
-                                  height: 1.5,
+                      return FutureBuilder<DocumentSnapshot>(
+                        future: FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(review['userId'])
+                            .get(),
+                        builder: (context, userSnapshot) {
+                          final userData = userSnapshot.data?.data() as Map<String, dynamic>?;
+
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 16),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.grey.withOpacity(0.08),
+                                  blurRadius: 20,
+                                  spreadRadius: 0,
+                                  offset: const Offset(0, 4),
                                 ),
-                                maxLines: 3,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              if ((review['photoUrls'] as List?)?.isNotEmpty ?? false) ...[
-                                const SizedBox(height: 12),
-                                SizedBox(
-                                  height: 80,
-                                  child: ListView.builder(
-                                    scrollDirection: Axis.horizontal,
-                                    itemCount: (review['photoUrls'] as List).length,
-                                    itemBuilder: (context, photoIndex) {
-                                      return Padding(
-                                        padding: const EdgeInsets.only(right: 8),
-                                        child: ClipRRect(
-                                          borderRadius: BorderRadius.circular(8),
-                                          child: Image.network(
-                                            review['photoUrls'][photoIndex],
-                                            width: 80,
-                                            height: 80,
-                                            fit: BoxFit.cover,
-                                            errorBuilder: (context, error, stackTrace) {
+                              ],
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // 유저 정보 섹션
+                                Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[50],
+                                    borderRadius: const BorderRadius.vertical(
+                                      top: Radius.circular(16),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Stack(
+                                        children: [
+                                          CircleAvatar(
+                                            radius: 24,
+                                            backgroundColor: Colors.indigo.withOpacity(0.1),
+                                            backgroundImage: (userData != null &&
+                                                userData['profileImageUrl'] != null &&
+                                                userData['profileImageUrl'].toString().isNotEmpty)
+                                                ? NetworkImage(userData['profileImageUrl'])
+                                                : null,
+                                            child: (userData == null ||
+                                                userData['profileImageUrl'] == null ||
+                                                userData['profileImageUrl'].toString().isEmpty)
+                                                ? (userData?['icon'] != null)
+                                                ? Text(
+                                              userData!['icon'],
+                                              style: const TextStyle(fontSize: 24),
+                                            )
+                                                : Icon(
+                                              Icons.person_outline_rounded,
+                                              size: 28,
+                                              color: Colors.indigo[400],
+                                            )
+                                                : null,
+                                          ),
+                                          Positioned(
+                                            bottom: 0,
+                                            right: 0,
+                                            child: Container(
+                                              decoration: BoxDecoration(
+                                                color: Colors.white,
+                                                shape: BoxShape.circle,
+                                              ),
+                                              child: Text(
+                                                getGradeIcon(userData?['grade']),
+                                                style: const TextStyle(fontSize: 14),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Text(
+                                                  userData?['username'] ?? 'Người dùng ẩn danh',
+                                                  style: GoogleFonts.notoSans(
+                                                    fontSize: 15,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: Colors.black87,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 6),
+                                            // 피부 타입과 피부 상태를 Wrap으로 표시
+                                            Wrap(
+                                              spacing: 6,
+                                              runSpacing: 6,
+                                              children: [
+                                                if (userData?['skinType'] != null)
+                                                  Container(
+                                                    padding: const EdgeInsets.symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 2,
+                                                    ),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.indigo.withOpacity(0.1),
+                                                      borderRadius: BorderRadius.circular(12),
+                                                    ),
+                                                    child: Text(
+                                                      userData!['skinType'],
+                                                      style: GoogleFonts.notoSans(
+                                                        fontSize: 12,
+                                                        color: Colors.indigo,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                if (userData?['skinConditions'] != null)
+                                                  ...(userData!['skinConditions'] as List).map(
+                                                        (condition) => Container(
+                                                      padding: const EdgeInsets.symmetric(
+                                                        horizontal: 8,
+                                                        vertical: 2,
+                                                      ),
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.teal.withOpacity(0.1),
+                                                        borderRadius: BorderRadius.circular(12),
+                                                      ),
+                                                      child: Text(
+                                                        condition,
+                                                        style: GoogleFonts.notoSans(
+                                                          fontSize: 12,
+                                                          color: Colors.teal,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ).toList(),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 6),
+                                            // 별점 표시
+                                            Row(
+                                              children: List.generate(
+                                                5,
+                                                    (index) => Icon(
+                                                  index < (review['rating'] ?? 0)
+                                                      ? Icons.star_rounded
+                                                      : Icons.star_outline_rounded,
+                                                  color: Colors.amber[400],
+                                                  size: 16,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      if (createdAt != null)
+                                        Text(
+                                          createdAt.toDate().toString().split(' ')[0],
+                                          style: GoogleFonts.notoSans(
+                                            fontSize: 12,
+                                            color: Colors.grey[500],
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                                // 리뷰 내용 섹션
+                                Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        review['title'] ?? '',
+                                        style: GoogleFonts.notoSans(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.black87,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        review['content'] ?? '',
+                                        style: GoogleFonts.notoSans(
+                                          fontSize: 14,
+                                          height: 1.5,
+                                          color: Colors.black87,
+                                        ),
+                                        maxLines: 3,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      if ((review['photoUrls'] as List?)?.isNotEmpty ?? false) ...[
+                                        const SizedBox(height: 12),
+                                        SizedBox(
+                                          height: 100,
+                                          child: ListView.builder(
+                                            scrollDirection: Axis.horizontal,
+                                            itemCount: (review['photoUrls'] as List).length,
+                                            itemBuilder: (context, photoIndex) {
                                               return Container(
-                                                width: 80,
-                                                height: 80,
-                                                color: Colors.grey[200],
-                                                child: Icon(
-                                                  Icons.error_outline,
-                                                  color: Colors.grey[400],
+                                                margin: const EdgeInsets.only(right: 8),
+                                                decoration: BoxDecoration(
+                                                  borderRadius: BorderRadius.circular(12),
+                                                  boxShadow: [
+                                                    BoxShadow(
+                                                      color: Colors.black.withOpacity(0.08),
+                                                      blurRadius: 8,
+                                                      spreadRadius: 0,
+                                                      offset: const Offset(0, 2),
+                                                    ),
+                                                  ],
+                                                ),
+                                                child: ClipRRect(
+                                                  borderRadius: BorderRadius.circular(12),
+                                                  child: Image.network(
+                                                    review['photoUrls'][photoIndex],
+                                                    width: 100,
+                                                    height: 100,
+                                                    fit: BoxFit.cover,
+                                                    errorBuilder: (context, error, stackTrace) {
+                                                      return Container(
+                                                        width: 100,
+                                                        height: 100,
+                                                        color: Colors.grey[200],
+                                                        child: Icon(
+                                                          Icons.error_outline,
+                                                          color: Colors.grey[400],
+                                                        ),
+                                                      );
+                                                    },
+                                                  ),
                                                 ),
                                               );
                                             },
                                           ),
                                         ),
-                                      );
-                                    },
+                                      ],
+                                    ],
                                   ),
                                 ),
-                              ],
-                              if (createdAt != null) ...[
-                                const SizedBox(height: 8),
-                                Text(
-                                  '작성일: ${createdAt.toDate().toString().split(' ')[0]}',
-                                  style: GoogleFonts.roboto(
-                                    fontSize: 12,
-                                    color: Colors.grey[500],
+                                // 하단 버튼
+                                Container(
+                                  decoration: const BoxDecoration(
+                                    border: Border(
+                                      top: BorderSide(color: Colors.black12),
+                                    ),
                                   ),
-                                ),
-                              ],
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                children: [
-                                  TextButton(
+                                  child: TextButton(
                                     onPressed: () {
                                       Navigator.push(
                                         context,
@@ -457,18 +610,33 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                     },
                                     style: TextButton.styleFrom(
                                       foregroundColor: Colors.indigo,
-                                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: const BorderRadius.vertical(
+                                          bottom: Radius.circular(16),
+                                        ),
+                                      ),
                                     ),
-                                    child: Text(
-                                      '자세히 보기',
-                                      style: GoogleFonts.roboto(fontSize: 12),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          '자세히 보기',
+                                          style: GoogleFonts.notoSans(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        const Icon(Icons.arrow_forward_ios, size: 14),
+                                      ],
                                     ),
                                   ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
                       );
                     },
                   );

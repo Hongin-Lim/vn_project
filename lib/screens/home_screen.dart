@@ -257,7 +257,7 @@ class _EventBannerState extends State<EventBanner> {
 
   void _startAutoSlide() {
     _timer = Timer.periodic(const Duration(seconds: 5), (timer) {
-      if (_currentPage < 1) {
+      if (_currentPage < 2) {
         _pageController.nextPage(
           duration: const Duration(milliseconds: 500),
           curve: Curves.easeInOut,
@@ -282,7 +282,8 @@ class _EventBannerState extends State<EventBanner> {
   @override
   Widget build(BuildContext context) {
     const List<String> bannerImages = [
-      'https://hongin-lim.github.io/vn_project/images/slide-001.png',
+      'https://hongin-lim.github.io/vn_project/images/slide-004.jpg',
+      'https://hongin-lim.github.io/vn_project/images/slide-003.jpg',
       'https://hongin-lim.github.io/vn_project/images/slide-002.png',
     ];
 

@@ -86,7 +86,6 @@ class ReviewDetailScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 리뷰 이미지 섹션
           if (review['photoUrls'] != null && review['photoUrls'].isNotEmpty)
             Stack(
               children: [
@@ -118,7 +117,6 @@ class ReviewDetailScreen extends StatelessWidget {
                     },
                   ),
                 ),
-                // 그라데이션 오버레이
                 Positioned(
                   bottom: 0,
                   left: 0,
@@ -145,7 +143,6 @@ class ReviewDetailScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 사용자 정보 섹션
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
@@ -160,133 +157,86 @@ class ReviewDetailScreen extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: Row(
+                  child: Column(
                     children: [
-                      // 프로필 이미지와 아이콘
-                      Stack(
+                      Row(
                         children: [
-                          CircleAvatar(
-                            radius: 28,
-                            backgroundColor: Colors.grey[50],
-                            backgroundImage: (userData != null &&
-                                userData['profileImageUrl'] != null &&
-                                userData['profileImageUrl'].toString().isNotEmpty)
-                                ? NetworkImage(userData['profileImageUrl'])
-                                : null,
-                            child: (userData == null ||
-                                userData['profileImageUrl'] == null ||
-                                userData['profileImageUrl'].toString().isEmpty)
-                                ? Container(
-                              decoration: BoxDecoration(
-                                color: Colors.indigo.withOpacity(0.1),
-                                shape: BoxShape.circle,
+                          Stack(
+                            children: [
+                              CircleAvatar(
+                                radius: 28,
+                                backgroundColor: Colors.indigo.withOpacity(0.1),
+                                backgroundImage: (userData != null &&
+                                    userData['profileImageUrl'] != null &&
+                                    userData['profileImageUrl'].toString().isNotEmpty)
+                                    ? NetworkImage(userData['profileImageUrl'])
+                                    : null,
+                                child: (userData == null ||
+                                    userData['profileImageUrl'] == null ||
+                                    userData['profileImageUrl'].toString().isEmpty)
+                                    ? (userData?['icon'] != null)
+                                    ? Text(
+                                  userData!['icon'],
+                                  style: const TextStyle(fontSize: 32),
+                                )
+                                    : Icon(
+                                  Icons.person_outline_rounded,
+                                  size: 32,
+                                  color: Colors.indigo[400],
+                                )
+                                    : null,
                               ),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  if (userData?['icon'] != null)
-                                    Text(
-                                      userData?['icon'],
-                                      style: const TextStyle(fontSize: 34),
-                                    )
-                                  else
-                                    Icon(
-                                      Icons.person,
-                                      size: 32,
-                                      color: Colors.indigo[300],
-                                    ),
-                                ],
-                              ),
-                            )
-                                : null,
-                          ),
-                          // 등급 뱃지
-                          Positioned(
-                            bottom: -2,
-                            right: -2,
-                            child: Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: getGradeColor(userData?['grade']),
-                                  width: 2,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 4,
-                                    spreadRadius: 0,
-                                  ),
-                                ],
-                              ),
-                              child: Text(
-                                getGradeIcon(userData?['grade']),
-                                style: const TextStyle(fontSize: 12),
-                              ),
-                            ),
-                          ),
-                          // Admin 뱃지 (있는 경우)
-                          if (userData?['role'] == 'admin')
-                            Positioned(
-                              top: -2,
-                              right: -2,
-                              child: Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: BoxDecoration(
-                                  color: Colors.red[400],
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
+                              Positioned(
+                                bottom: 0,
+                                right: 0,
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
                                     color: Colors.white,
-                                    width: 2,
+                                    shape: BoxShape.circle,
                                   ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.1),
-                                      blurRadius: 4,
-                                      spreadRadius: 0,
+                                  child: Text(
+                                    getGradeIcon(userData?['grade']),
+                                    style: const TextStyle(fontSize: 14),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  userData?['username'] ?? 'Người dùng ẩn danh',
+                                  style: GoogleFonts.notoSans(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: [
+                                    _buildInfoChip(
+                                      label: userData?['skinType'] ?? 'Không xác định',
+                                      color: Colors.indigo,
+                                    ),
+                                    ...?userData?['skinConditions']?.map<Widget>((condition) =>
+                                        _buildInfoChip(
+                                          label: condition,
+                                          color: Colors.teal,
+                                        ),
                                     ),
                                   ],
                                 ),
-                                child: const Icon(
-                                  Icons.admin_panel_settings,
-                                  size: 12,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              userData?['username'] ?? 'Người dùng ẩn danh',
-                              style: GoogleFonts.notoSans(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Row(
-                              children: [
-                                _buildInfoChip(
-                                  label: userData?['skinType'] ?? 'Không xác định',
-                                  color: Colors.indigo,
-                                ),
-                                const SizedBox(width: 8),
-                                _buildInfoChip(
-                                  label: '${userData?['age'].toString() ?? ''} tuổi',
-                                  color: Colors.amber[700]!,
-                                ),
                               ],
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -294,7 +244,6 @@ class ReviewDetailScreen extends StatelessWidget {
 
                 const SizedBox(height: 24),
 
-                // 별점과 날짜
                 Container(
                   padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                   decoration: BoxDecoration(
@@ -305,17 +254,15 @@ class ReviewDetailScreen extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Row(
-                        children: [
-                          ...List.generate(5, (index) {
-                            return Icon(
-                              index < (review['rating'] ?? 0)
-                                  ? Icons.star_rounded
-                                  : Icons.star_outline_rounded,
-                              color: Colors.amber[400],
-                              size: 28,
-                            );
-                          }),
-                        ],
+                        children: List.generate(5, (index) {
+                          return Icon(
+                            index < (review['rating'] ?? 0)
+                                ? Icons.star_rounded
+                                : Icons.star_outline_rounded,
+                            color: Colors.amber[400],
+                            size: 28,
+                          );
+                        }),
                       ),
                       if (createdAt != null)
                         Text(
@@ -331,7 +278,6 @@ class ReviewDetailScreen extends StatelessWidget {
 
                 const SizedBox(height: 24),
 
-                // 제목
                 Text(
                   review['title'] ?? 'Không có tiêu đề',
                   style: GoogleFonts.notoSans(
@@ -344,7 +290,6 @@ class ReviewDetailScreen extends StatelessWidget {
 
                 const SizedBox(height: 16),
 
-                // 내용
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
@@ -368,52 +313,6 @@ class ReviewDetailScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-
-                const SizedBox(height: 24),
-
-                // 피부 상태 태그
-                if (userData != null && userData['skinConditions'] != null) ...[
-                  Text(
-                    'Tình trạng da',
-                    style: GoogleFonts.notoSans(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: (userData['skinConditions'] as List)
-                        .map((condition) => Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.grey[200]!),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey.withOpacity(0.05),
-                            blurRadius: 10,
-                            spreadRadius: 0,
-                          ),
-                        ],
-                      ),
-                      child: Text(
-                        condition,
-                        style: GoogleFonts.notoSans(
-                          fontSize: 14,
-                          color: Colors.grey[700],
-                        ),
-                      ),
-                    ))
-                        .toList(),
-                  ),
-                ],
               ],
             ),
           ),
