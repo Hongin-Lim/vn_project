@@ -373,13 +373,53 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                                // 상품 정보 섹션
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4), // 패딩 줄임
+                                  decoration: BoxDecoration(
+                                    color: Colors.deepPurple[50], // 그라데이션 대신 깔끔한 단색
+                                    borderRadius: const BorderRadius.vertical(
+                                      top: Radius.circular(16),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      ClipRRect( // Container 대신 ClipRRect 사용
+                                        borderRadius: BorderRadius.circular(6), // 라운드 값 줄임
+                                        child: Image.network(
+                                          _productData?['imageUrl'] ?? '',
+                                          width: 32, // 크기 줄임
+                                          height: 32, // 크기 줄임
+                                          fit: BoxFit.cover,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text(
+                                          _productData?['name'] ?? '',
+                                          style: GoogleFonts.notoSans(
+                                            fontSize: 13, // 폰트 크기 줄임
+                                            fontWeight: FontWeight.w500,
+                                            color: Colors.grey[800], // 색상 톤 조정
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                                 // 유저 정보 섹션
                                 Container(
                                   padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
                                     color: Colors.grey[50],
-                                    borderRadius: const BorderRadius.vertical(
-                                      top: Radius.circular(16),
+                                    border: Border(
+                                      top: BorderSide(
+                                        color: Colors.grey.withOpacity(0.1),
+                                        width: 1,
+                                      ),
                                     ),
                                   ),
                                   child: Row(
@@ -413,7 +453,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                             bottom: 0,
                                             right: 0,
                                             child: Container(
-                                              decoration: BoxDecoration(
+                                              decoration: const BoxDecoration(
                                                 color: Colors.white,
                                                 shape: BoxShape.circle,
                                               ),
@@ -443,7 +483,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                               ],
                                             ),
                                             const SizedBox(height: 6),
-                                            // 피부 타입과 피부 상태를 Wrap으로 표시
                                             Wrap(
                                               spacing: 6,
                                               runSpacing: 6,
@@ -489,7 +528,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                               ],
                                             ),
                                             const SizedBox(height: 6),
-                                            // 별점 표시
                                             Row(
                                               children: List.generate(
                                                 5,
@@ -516,7 +554,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                     ],
                                   ),
                                 ),
-                                // 리뷰 내용 섹션
+                                // 리뷰 내용 섹션 (기존과 동일)
                                 Padding(
                                   padding: const EdgeInsets.all(16),
                                   child: Column(

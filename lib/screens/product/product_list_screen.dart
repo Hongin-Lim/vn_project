@@ -1,7 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'add_product_screen.dart';
 import 'product_detail_screen.dart';
 
 class ProductListScreen extends StatefulWidget {
@@ -21,11 +23,29 @@ class _ProductListScreenState extends State<ProductListScreen> {
   String _currentFilter = "Phổ biến";
   DocumentSnapshot? _lastDocument;
   bool _isLoading = false;
+  String userRole = '';  // 추가
 
   @override
   void initState() {
     super.initState();
     _loadProducts();
+    _checkUserRole();  // 추가
+  }
+  // 추가: 사용자 역할 확인 함수
+  Future<void> _checkUserRole() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final userDoc = await _firestore.collection('users').doc(user.uid).get();
+        if (userDoc.exists) {
+          setState(() {
+            userRole = userDoc.data()?['role'] ?? '';
+          });
+        }
+      }
+    } catch (e) {
+      print('Error checking user role: $e');
+    }
   }
 
   Future<void> _loadProducts() async {
@@ -187,6 +207,37 @@ class _ProductListScreenState extends State<ProductListScreen> {
                     ),
                     underline: SizedBox(),
                   ),
+                  const Spacer(),  // 추가: 남은 공간을 채움
+                  if (userRole == 'admin')  // 추가: 관리자 버튼
+                    ElevatedButton.icon(  // ElevatedButton을 ElevatedButton.icon으로 변경
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => AddProductScreen(),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.add, size: 18),
+                      label: Text(
+                        '상품 등록',
+                        style: GoogleFonts.notoSans(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.deepPurple,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),

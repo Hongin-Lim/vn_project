@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 
 import '../../models/user_model.dart';
@@ -18,59 +19,50 @@ class _SignupScreenState extends State<SignupScreen> {
   final _nameController = TextEditingController();
   final _ageController = TextEditingController();
 
-  String _selectedGender = 'Male'; // 기본값
-  String _selectedRegion = 'Vietnam'; // 기본값
-  String _selectedSkinType = 'Normal'; // 피부 타입 단일 선택
-  List<String> _selectedSkinConditions = []; // 피부 상태 복수 선택
-  String _selectedIcon = '😊'; // 기본 아이콘/이모티콘
+  String _selectedGender = 'Male';
+  String _selectedRegion = 'Vietnam';
+  String _selectedSkinType = 'Da thường';
+  List<String> _selectedSkinConditions = [];
+  String _selectedIcon = '😊';
 
   final _authService = AuthService();
 
-  // 피부 상태 리스트
   final List<Map<String, String>> _skinConditionsOptions = [
-    {'key': 'acne', 'label': '여드름'},
-    {'key': 'redness', 'label': '홍조'},
-    {'key': 'wrinkles', 'label': '주름'},
-    {'key': 'spots', 'label': '잡티'},
+    {'key': 'Mụn', 'label': 'Mụn(여드름)'},
+    {'key': 'Mẩn đỏ', 'label': 'Mẩn đỏ(홍조)'},
+    {'key': 'Nếp nhăn', 'label': 'Nếp nhăn(주름)'},
+    {'key': 'Đốm nâu', 'label': 'Đốm nâu(잡티)'}
   ];
 
-  // 아이콘/이모티콘 리스트
   final List<String> _iconOptions = [
-    '👩', // 여성
-    '👨', // 남성
-    '👶', // 아기
-    '🧑‍🎨', // 아티스트
-    '👩‍🔧', // 기술자
-    '💄', // 립스틱 (화장품)
-    '💅', // 매니큐어
-    '👗', // 드레스
-    '👒', // 모자
-    '👜', // 핸드백
+    '👩', '👨', '👶', '🧑‍🎨', '👩‍🔧',
+    '💄', '💅', '👗', '👒', '👜',
   ];
 
   void _signUp() async {
+    if (!_validateInputs()) return;
+
     try {
-      // Firebase Authentication으로 계정 생성
       User? user = await _authService.signUp(
         _emailController.text.trim(),
         _passwordController.text.trim(),
       );
 
       if (user != null) {
-        // Firestore에 사용자 정보 저장
         final newUser = UserModel(
           email: _emailController.text.trim(),
           username: _usernameController.text.trim(),
           gender: _selectedGender,
           age: int.parse(_ageController.text.trim()),
           region: _selectedRegion,
-          skinType: _selectedSkinType, // 단일 선택된 피부 타입 저장
-          skinConditions: _selectedSkinConditions, // 복수 선택된 피부 상태 저장
+          skinType: _selectedSkinType,
+          skinConditions: _selectedSkinConditions,
           createdAt: DateTime.now(),
           lastLoginAt: DateTime.now(),
           profileImageUrl: '',
-          icon: _selectedIcon, // 사용자가 선택한 아이콘 저장
-          role: 'user', // 사용자 역할 (기본값: 'user')
+          icon: _selectedIcon,
+          role: 'user',
+          grade: 'Bronze', // 기본 등급 설정
         );
 
         await FirebaseFirestore.instance
@@ -78,173 +70,369 @@ class _SignupScreenState extends State<SignupScreen> {
             .doc(user.uid)
             .set(newUser.toFirestore());
 
-        // 회원가입 성공 -> 로그인 화면으로 이동
-        Navigator.pushNamed(context, '/login');
+        Navigator.pushReplacementNamed(context, '/login');
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text("Sign-up failed: $e"),
-      ));
+      _showErrorDialog('회원가입 실패', e.toString());
     }
+  }
+
+  bool _validateInputs() {
+    if (_emailController.text.isEmpty ||
+        _passwordController.text.isEmpty ||
+        _usernameController.text.isEmpty ||
+        _ageController.text.isEmpty) {
+      _showErrorDialog('입력 오류', '모든 필수 항목을 입력해주세요.');
+      return false;
+    }
+    return true;
+  }
+
+  void _showErrorDialog(String title, String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('확인'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          "Sign Up",
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.deepPurple.shade50,
+              Colors.white,
+            ],
           ),
         ),
-        backgroundColor: Colors.deepPurple,
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-        child: Column(
-          children: [
-            const SizedBox(height: 20),
-            Text(
-              "Create Your Account",
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.deepPurple,
+        child: SafeArea(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildHeader(),
+                  const SizedBox(height: 32),
+                  _buildSignupForm(),
+                  const SizedBox(height: 24),
+                  _buildFooter(),
+                ],
               ),
             ),
-            const SizedBox(height: 10),
-            Text(
-              "Let’s get started with your beauty journey.",
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[700],
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 30),
-            _buildInputCard(),
-            const SizedBox(height: 30),
-            ElevatedButton(
-              onPressed: _signUp,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepPurple,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              ),
-              child: const Text(
-                "Sign Up",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-          ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildInputCard() {
-    return Card(
-      elevation: 6,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+  Widget _buildHeader() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(
+                icon: Icon(Icons.arrow_back_ios, color: Color(0xFFfa6386)),
+                onPressed: () => Navigator.pop(context),
+              ),
+              Expanded(
+                child: Text(
+                  'Review Này',
+                  style: GoogleFonts.dancingScript(
+                    fontSize: 40,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFFfa6386),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              // 좌우 대칭을 위한 투명한 아이콘 버튼
+              SizedBox(width: 48),  // IconButton의 기본 너비만큼 공간 확보
+            ],
+          ),
+          Container(
+            margin: const EdgeInsets.only(top: 12, bottom: 2),
+            child: Text(
+              "Tạo tài khoản mới",
+              style: GoogleFonts.notoSans(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+                letterSpacing: -0.5,
+              ),
+            ),
+          ),
+          Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            child: Text(
+              "Bắt đầu hành trình làm đẹp của bạn ngay hôm nay",
+              textAlign: TextAlign.center,
+              style: GoogleFonts.notoSans(
+                fontSize: 13,
+                color: Colors.grey[600],
+                height: 1.5,
+              ),
+            ),
+          ),
+          Container(
+            width: 60,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Color(0xFFfa6386).withOpacity(0.3),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+        ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            _buildTextField("Email", _emailController, TextInputType.emailAddress),
-            const SizedBox(height: 16),
-            _buildTextField("Password", _passwordController, TextInputType.text, obscureText: true),
-            const SizedBox(height: 16),
-            _buildTextField("Username", _usernameController, TextInputType.text),
-            const SizedBox(height: 16),
-            _buildTextField("Age", _ageController, TextInputType.number),
-            const SizedBox(height: 16),
-            _buildDropdown("Gender", _selectedGender, ['Male', 'Female', 'Other'],
-                    (value) => setState(() => _selectedGender = value!)),
-            const SizedBox(height: 16),
-            _buildDropdown("Region", _selectedRegion, ['Vietnam', 'Korea'],
-                    (value) => setState(() => _selectedRegion = value!)),
-            const SizedBox(height: 16),
-            _buildDropdown("Skin Type", _selectedSkinType, ['Oily', 'Dry', 'Combination', 'Sensitive', 'Normal'],
-                    (value) => setState(() => _selectedSkinType = value!)),
-            const SizedBox(height: 16),
-            MultiSelectDialogField(
-              items: _skinConditionsOptions
-                  .map((condition) => MultiSelectItem<String>(
-                condition['key']!,
-                condition['label']!,
-              ))
-                  .toList(),
-              title: const Text('피부 상태'),
-              selectedColor: Colors.deepPurple,
-              decoration: BoxDecoration(
-                color: Colors.deepPurple.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.deepPurple, width: 1),
+    );
+  }
+
+  Widget _buildSignupForm() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 20,
+            offset: Offset(0, 10),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildTextField("Email", _emailController, Icons.email),
+          const SizedBox(height: 16),
+          _buildTextField("Mật khẩu", _passwordController, Icons.lock, isPassword: true),
+          const SizedBox(height: 16),
+          _buildTextField("Tên người dùng", _usernameController, Icons.person),
+          const SizedBox(height: 16),
+          _buildTextField("Tuổi", _ageController, Icons.cake, isNumber: true),
+          const SizedBox(height: 16),
+          _buildDropdown(),
+          const SizedBox(height: 16),
+          _buildSkinTypeSection(),
+          const SizedBox(height: 16),
+          _buildIconSelector(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTextField(
+      String label,
+      TextEditingController controller,
+      IconData icon, {
+        bool isPassword = false,
+        bool isNumber = false,
+      }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.notoSans(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey[700],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.grey[50],
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey[200]!),
+          ),
+          child: TextField(
+            controller: controller,
+            obscureText: isPassword,
+            keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+            style: GoogleFonts.notoSans(),
+            decoration: InputDecoration(
+              prefixIcon: Icon(icon, color: Colors.grey[600], size: 20),
+              border: InputBorder.none,
+              contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDropdown() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "Giới tính",
+          style: GoogleFonts.notoSans(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey[700],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.grey[50],
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey[200]!),
+          ),
+          child: DropdownButtonFormField<String>(
+            value: _selectedGender,
+            decoration: const InputDecoration(
+              border: InputBorder.none,
+              contentPadding:
+              EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            ),
+            items: ['Male', 'Female', 'Other']
+                .map((item) => DropdownMenuItem(
+              value: item,
+              child: Text(item, style: GoogleFonts.notoSans()),
+            ))
+                .toList(),
+            onChanged: (value) {
+              setState(() {
+                _selectedGender = value!;
+              });
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+// 상단에 피부 타입 옵션 리스트 추가
+  final List<Map<String, String>> _skinTypeOptions = [
+    {'key': 'Da dầu', 'label': 'Da dầu(지성)'},
+    {'key': 'Da khô', 'label': 'Da khô(건성)'},
+    {'key': 'Da hỗn hợp', 'label': 'Da hỗn hợp(복합성)'},
+    {'key': 'Da nhạy cảm', 'label': 'Da nhạy cảm(민감성)'},
+    {'key': 'Da thường', 'label': 'Da thường(중성)'},
+  ];
+
+// _buildSkinTypeSection() 메서드를 수정
+  Widget _buildSkinTypeSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 피부 타입 단일 선택
+        Text(
+          "Loại da(피부 타입)",
+          style: GoogleFonts.notoSans(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey[700],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.grey[50],
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey[200]!),
+          ),
+          child: DropdownButtonFormField<String>(
+            value: _selectedSkinType,
+            decoration: const InputDecoration(
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            ),
+            items: _skinTypeOptions.map((type) => DropdownMenuItem(
+              value: type['key'],
+              child: Text(type['label']!, style: GoogleFonts.notoSans()),
+            )).toList(),
+            onChanged: (value) {
+              setState(() {
+                _selectedSkinType = value!;
+              });
+            },
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // 피부 상태 다중 선택
+        Text(
+          "Tình trạng da(피부 상태)",
+          style: GoogleFonts.notoSans(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey[700],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.grey[50],
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey[200]!),
+          ),
+          child: MultiSelectDialogField(
+            items: _skinConditionsOptions
+                .map((condition) => MultiSelectItem<String>(
+              condition['key']!,
+              condition['label']!,
+            ))
+                .toList(),
+            title: Text('Chọn tình trạng da'),
+            selectedColor: Color(0xFFfa6386),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            buttonIcon: Icon(Icons.add_circle_outline, color: Color(0xFFfa6386)),
+            buttonText: Text(
+              _selectedSkinConditions.isEmpty
+                  ? 'Vui lòng chọn tình trạng da'
+                  : '${_selectedSkinConditions.length} tình trạng được chọn(${_selectedSkinConditions.length}개 선택됨)',
+              style: GoogleFonts.notoSans(
+                color: Colors.grey[600],
+                fontSize: 14,
               ),
-              buttonText: const Text(
-                '피부 상태 선택',
-                style: TextStyle(color: Colors.deepPurple),
-              ),
-              onConfirm: (values) {
+            ),
+            onConfirm: (values) {
+              setState(() {
+                _selectedSkinConditions = values.cast<String>();
+              });
+            },
+            chipDisplay: MultiSelectChipDisplay(
+              onTap: (value) {
                 setState(() {
-                  _selectedSkinConditions = List<String>.from(values);
+                  _selectedSkinConditions.remove(value);
                 });
               },
+              chipColor: Color(0xFFfa6386).withOpacity(0.1),
+              textStyle: GoogleFonts.notoSans(
+                color: Color(0xFFfa6386),
+                fontSize: 12,
+              ),
             ),
-            const SizedBox(height: 16),
-            _buildIconSelector(),
-          ],
+          ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildTextField(String label, TextEditingController controller, TextInputType keyboardType,
-      {bool obscureText = false}) {
-    return TextField(
-      controller: controller,
-      keyboardType: keyboardType,
-      obscureText: obscureText,
-      decoration: InputDecoration(
-        labelText: label,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.deepPurple),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDropdown(String label, String value, List<String> items, Function(String?) onChanged) {
-    return DropdownButtonFormField<String>(
-      value: value,
-      onChanged: onChanged,
-      items: items.map((item) => DropdownMenuItem(value: item, child: Text(item))).toList(),
-      decoration: InputDecoration(
-        labelText: label,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.deepPurple),
-        ),
-      ),
+      ],
     );
   }
 
@@ -252,42 +440,44 @@ class _SignupScreenState extends State<SignupScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Select Your Icon',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        Text(
+          "프로필 아이콘 선택",
+          style: GoogleFonts.notoSans(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey[700],
+          ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 16),
         GridView.builder(
           shrinkWrap: true,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          physics: NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 5,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
           ),
           itemCount: _iconOptions.length,
           itemBuilder: (context, index) {
             final icon = _iconOptions[index];
+            final isSelected = _selectedIcon == icon;
             return GestureDetector(
-              onTap: () {
-                setState(() {
-                  _selectedIcon = icon; // 선택한 아이콘 업데이트
-                });
-              },
+              onTap: () => setState(() => _selectedIcon = icon),
               child: Container(
                 decoration: BoxDecoration(
-                  color: _selectedIcon == icon
-                      ? Colors.deepPurple.withOpacity(0.2)
-                      : Colors.grey.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  color: isSelected
+                      ? Colors.deepPurple.withOpacity(0.1)
+                      : Colors.grey[100],
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: _selectedIcon == icon ? Colors.deepPurple : Colors.grey,
+                    color: isSelected ? Colors.deepPurple : Colors.grey[300]!,
                     width: 2,
                   ),
                 ),
                 child: Center(
                   child: Text(
                     icon,
-                    style: const TextStyle(fontSize: 24),
+                    style: TextStyle(fontSize: 24),
                   ),
                 ),
               ),
@@ -296,5 +486,83 @@ class _SignupScreenState extends State<SignupScreen> {
         ),
       ],
     );
+  }
+
+  Widget _buildFooter() {
+    return Column(
+      children: [
+        Container(
+          width: double.infinity,
+          height: 56,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.deepPurple, Colors.deepPurple.shade700],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.deepPurple.withOpacity(0.3),
+                blurRadius: 10,
+                offset: Offset(0, 5),
+              ),
+            ],
+          ),
+          child: ElevatedButton(
+            onPressed: _signUp,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Color(0xFFfa6386),
+              shadowColor: Color(0xFFfa6386),
+              // backgroundColor: Colors.transparent,
+              // shadowColor: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            child: Text(
+              "Đăng ký",
+              style: GoogleFonts.notoSans(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 24),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              "Bạn đã có tài khoản? ",
+              style: GoogleFonts.notoSans(
+                color: Colors.grey[600],
+                fontSize: 14,
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pushNamed(context, '/login'),
+              child: Text(
+                "Login",
+                style: GoogleFonts.notoSans(
+                  color: Colors.deepPurple,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _usernameController.dispose();
+    _nameController.dispose();
+    _ageController.dispose();
+    super.dispose();
   }
 }

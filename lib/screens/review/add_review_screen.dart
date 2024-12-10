@@ -300,8 +300,12 @@ class _AddReviewScreenState extends State<AddReviewScreen> {
     );
   }
 
+// 전체화면 레이아웃 수정
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final isSmallScreen = screenSize.width < 360;
+
     return Theme(
       data: Theme.of(context).copyWith(
         textTheme: GoogleFonts.notoSansTextTheme(Theme.of(context).textTheme),
@@ -314,6 +318,7 @@ class _AddReviewScreenState extends State<AddReviewScreen> {
             style: GoogleFonts.notoSans(
               color: Colors.black87,
               fontWeight: FontWeight.w600,
+              fontSize: isSmallScreen ? 18 : 20,
             ),
           ),
           backgroundColor: Colors.white,
@@ -325,35 +330,36 @@ class _AddReviewScreenState extends State<AddReviewScreen> {
             children: [
               Container(
                 color: Colors.white,
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
                 child: Row(
                   children: [
                     ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: Image.network(
                         widget.productImage,
-                        width: 60,
-                        height: 60,
+                        width: isSmallScreen ? 50 : 60,
+                        height: isSmallScreen ? 50 : 60,
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) {
                           return Container(
-                            width: 60,
-                            height: 60,
+                            width: isSmallScreen ? 50 : 60,
+                            height: isSmallScreen ? 50 : 60,
                             color: Colors.grey[200],
                             child: Icon(
                               Icons.image_not_supported,
                               color: Colors.grey[400],
+                              size: isSmallScreen ? 20 : 24,
                             ),
                           );
                         },
                       ),
                     ),
-                    const SizedBox(width: 16),
+                    SizedBox(width: isSmallScreen ? 12 : 16),
                     Expanded(
                       child: Text(
                         widget.productName,
                         style: GoogleFonts.notoSans(
-                          fontSize: 16,
+                          fontSize: isSmallScreen ? 14 : 16,
                           fontWeight: FontWeight.w600,
                         ),
                         maxLines: 2,
@@ -363,30 +369,32 @@ class _AddReviewScreenState extends State<AddReviewScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: isSmallScreen ? 6 : 8),
               Container(
                 color: Colors.white,
-                padding: const EdgeInsets.all(20),
+                padding: EdgeInsets.all(isSmallScreen ? 16 : 20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
+                      width: double.infinity,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       decoration: BoxDecoration(
                         color: Colors.grey[50],
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                      child: Wrap(  // Row 대신 Wrap을 사용하여 유연한 레이아웃 구현
+                        alignment: WrapAlignment.center,
+                        spacing: 12.0,  // 아이템 간 가로 간격
+                        runSpacing: 12.0,  // 줄 바꿈 시 세로 간격
                         children: [
                           Text(
                             'Bạn có hài lòng với sản phẩm không?',
                             style: GoogleFonts.notoSans(
-                              fontSize: 16,
+                              fontSize: isSmallScreen ? 14 : 16,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
-                          const SizedBox(width: 16),
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 12,
@@ -397,92 +405,104 @@ class _AddReviewScreenState extends State<AddReviewScreen> {
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(color: Colors.grey[300]!),
                             ),
-                            child: DropdownButton<double>(
-                              value: _rating,
-                              underline: Container(),
-                              items: List.generate(
-                                5,
-                                (index) => DropdownMenuItem(
-                                  value: (index + 1).toDouble(),
-                                  child: Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.star,
-                                        color: Colors.amber,
-                                        size: 20,
-                                      ),
-                                      Text(
-                                        ' ${index + 1} điểm',
-                                        style: GoogleFonts.notoSans(),
-                                      ),
-                                    ],
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<double>(
+                                value: _rating,
+                                isDense: true,
+                                itemHeight: 48,  // 드롭다운 아이템 높이 설정
+                                items: List.generate(
+                                  5,
+                                      (index) => DropdownMenuItem(
+                                    value: (index + 1).toDouble(),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(
+                                          Icons.star,
+                                          color: Colors.amber,
+                                          size: 20,
+                                        ),
+                                        Text(
+                                          ' ${index + 1} điểm',
+                                          style: GoogleFonts.notoSans(
+                                            fontSize: isSmallScreen ? 13 : 14,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
+                                onChanged: (value) {
+                                  setState(() {
+                                    _rating = value ?? 1.0;
+                                  });
+                                },
                               ),
-                              onChanged: (value) {
-                                setState(() {
-                                  _rating = value ?? 1.0;
-                                });
-                              },
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    SizedBox(height: isSmallScreen ? 20 : 24),
                     Text(
                       'Tiêu đề đánh giá',
                       style: GoogleFonts.notoSans(
-                        fontSize: 15,
+                        fontSize: isSmallScreen ? 14 : 15,
                         fontWeight: FontWeight.w600,
                         color: Colors.black87,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: isSmallScreen ? 6 : 8),
                     TextField(
                       controller: _titleController,
+                      style: TextStyle(fontSize: isSmallScreen ? 14 : 16),
                       decoration: InputDecoration(
                         hintText: 'Viết tiêu đề về sản phẩm',
-                        hintStyle:
-                            GoogleFonts.notoSans(color: Colors.grey[400]),
+                        hintStyle: GoogleFonts.notoSans(
+                          color: Colors.grey[400],
+                          fontSize: isSmallScreen ? 14 : 16,
+                        ),
                         filled: true,
                         fillColor: Colors.grey[50],
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
                         ),
-                        contentPadding: const EdgeInsets.all(16),
+                        contentPadding: EdgeInsets.all(isSmallScreen ? 12 : 16),
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    SizedBox(height: isSmallScreen ? 20 : 24),
                     Text(
                       'Nội dung đánh giá',
                       style: GoogleFonts.notoSans(
-                        fontSize: 15,
+                        fontSize: isSmallScreen ? 14 : 15,
                         fontWeight: FontWeight.w600,
                         color: Colors.black87,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: isSmallScreen ? 6 : 8),
                     TextField(
                       controller: _contentController,
                       maxLines: 6,
+                      style: TextStyle(fontSize: isSmallScreen ? 14 : 16),
                       decoration: InputDecoration(
                         hintText: 'Viết đánh giá chân thực về sản phẩm',
-                        hintStyle:
-                            GoogleFonts.notoSans(color: Colors.grey[400]),
+                        hintStyle: GoogleFonts.notoSans(
+                          color: Colors.grey[400],
+                          fontSize: isSmallScreen ? 14 : 16,
+                        ),
                         filled: true,
                         fillColor: Colors.grey[50],
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
                         ),
-                        contentPadding: const EdgeInsets.all(16),
+                        contentPadding: EdgeInsets.all(isSmallScreen ? 12 : 16),
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    SizedBox(height: isSmallScreen ? 20 : 24),
                     Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
                       decoration: BoxDecoration(
                         color: Colors.grey[50],
                         borderRadius: BorderRadius.circular(12),
@@ -492,7 +512,7 @@ class _AddReviewScreenState extends State<AddReviewScreen> {
                           InkWell(
                             onTap: _isUploading ? null : _pickImages,
                             child: Container(
-                              padding: const EdgeInsets.all(16),
+                              padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
                               decoration: BoxDecoration(
                                 border: Border.all(color: Colors.grey[300]!),
                                 borderRadius: BorderRadius.circular(12),
@@ -505,17 +525,17 @@ class _AddReviewScreenState extends State<AddReviewScreen> {
                                     color: _isUploading
                                         ? Colors.grey[400]
                                         : Colors.grey,
+                                    size: isSmallScreen ? 20 : 24,
                                   ),
-                                  const SizedBox(width: 8),
+                                  SizedBox(width: isSmallScreen ? 6 : 8),
                                   Text(
-                                    _isUploading
-                                        ? 'Đang tải lên...'
-                                        : 'Thêm ảnh',
+                                    _isUploading ? 'Đang tải lên...' : 'Thêm ảnh',
                                     style: GoogleFonts.notoSans(
                                       color: _isUploading
                                           ? Colors.grey[400]
                                           : Colors.grey,
                                       fontWeight: FontWeight.w500,
+                                      fontSize: isSmallScreen ? 14 : 16,
                                     ),
                                   ),
                                 ],
@@ -523,23 +543,23 @@ class _AddReviewScreenState extends State<AddReviewScreen> {
                             ),
                           ),
                           if (_selectedImages.isNotEmpty) ...[
-                            const SizedBox(height: 16),
+                            SizedBox(height: isSmallScreen ? 12 : 16),
                             _buildImagePreview(),
                           ],
                           if (_isUploading && _uploadProgress > 0) ...[
-                            const SizedBox(height: 16),
+                            SizedBox(height: isSmallScreen ? 12 : 16),
                             LinearProgressIndicator(
                               value: _uploadProgress / 100,
                               backgroundColor: Colors.grey[200],
                               valueColor:
-                                  AlwaysStoppedAnimation<Color>(Colors.indigo),
+                              AlwaysStoppedAnimation<Color>(Colors.indigo),
                             ),
                             const SizedBox(height: 8),
                             Text(
                               'Đang tải lên: ${_uploadProgress.toStringAsFixed(1)}%',
                               style: GoogleFonts.notoSans(
                                 color: Colors.grey[600],
-                                fontSize: 12,
+                                fontSize: isSmallScreen ? 11 : 12,
                               ),
                             ),
                           ],
@@ -553,7 +573,7 @@ class _AddReviewScreenState extends State<AddReviewScreen> {
           ),
         ),
         bottomNavigationBar: Container(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
           decoration: BoxDecoration(
             color: Colors.white,
             boxShadow: [
@@ -571,7 +591,9 @@ class _AddReviewScreenState extends State<AddReviewScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.indigo,
                 disabledBackgroundColor: Colors.grey[300],
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                padding: EdgeInsets.symmetric(
+                    vertical: isSmallScreen ? 12 : 16
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -580,7 +602,7 @@ class _AddReviewScreenState extends State<AddReviewScreen> {
               child: Text(
                 _isUploading ? 'Đang tải lên...' : 'Gửi đánh giá',
                 style: GoogleFonts.notoSans(
-                  fontSize: 16,
+                  fontSize: isSmallScreen ? 14 : 16,
                   fontWeight: FontWeight.w600,
                   color: Colors.white,
                 ),

@@ -6,20 +6,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shimmer/shimmer.dart';
-import 'package:vn_project/screens/product/add_product_screen.dart';
 import 'package:vn_project/screens/review/review_detail_screen.dart';
 
 import 'product/product_list_screen.dart';
-
-
 
 // 반응형 유틸리티 클래스
 class ResponsiveBreakpoints {
   static bool isDesktop(BuildContext context) =>
       MediaQuery.of(context).size.width > 1200;
+
   static bool isTablet(BuildContext context) =>
       MediaQuery.of(context).size.width >= 768 &&
-          MediaQuery.of(context).size.width <= 1200;
+      MediaQuery.of(context).size.width <= 1200;
+
   static bool isMobile(BuildContext context) =>
       MediaQuery.of(context).size.width < 768;
 
@@ -63,7 +62,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _getUserRole(String uid) async {
     try {
-      DocumentSnapshot userDoc = await _firestore.collection('users').doc(uid).get();
+      DocumentSnapshot userDoc =
+          await _firestore.collection('users').doc(uid).get();
       if (userDoc.exists) {
         setState(() {
           userRole = userDoc['role'];
@@ -82,57 +82,58 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // 텍스트로 된 로고
     return Scaffold(
-        backgroundColor: Colors.grey[50],
-        appBar: AppBar(
+      backgroundColor: Colors.grey[50],
+      appBar: AppBar(
         elevation: 0,
+        centerTitle: true, // 로고를 중앙에 위치시킴
         title: Text(
-        'Review Này',
-        style: GoogleFonts.dancingScript(
-        // fontSize: isDesktopView ? 28 : 24,\
-          fontSize: isDesktopView ? 36 : 32, // 글씨 크기를 더 키움
-        fontWeight: FontWeight.bold,
-        color: Color(0xFFfa6386),
-    ),
-    ),
-    backgroundColor: Colors.white,
-    actions: [
-    if (_auth.currentUser != null)
-    IconButton(
-    icon: const Icon(Icons.logout, color: Colors.deepPurple),
-    onPressed: () async {
-    await _auth.signOut();
-    setState(() {});
-    },
-    )
-    else
-    Row(
-    children: [
-    TextButton(
-    onPressed: () => Navigator.pushNamed(context, '/login'),
-    child: Text(
-    'Login',
-    style: GoogleFonts.notoSans(
-    color: Colors.deepPurple,
-    fontWeight: FontWeight.bold,
-    fontSize: isDesktopView ? 16 : 14,
-    ),
-    ),
-    ),
-    // TextButton(
-    // onPressed: () => Navigator.pushNamed(context, '/signup'),
-    // child: Text(
-    // 'Sign Up',
-    // style: GoogleFonts.notoSans(
-    // color: Colors.deepPurple,
-    // fontWeight: FontWeight.bold,
-    // fontSize: isDesktopView ? 16 : 14,
-    // ),
-    // ),
-    // ),
-    ],
-    ),
-    ],
-    ),
+          'Review Này',
+          style: GoogleFonts.dancingScript(
+            // fontSize: isDesktopView ? 28 : 24,\
+            fontSize: isDesktopView ? 36 : 32, // 글씨 크기를 더 키움
+            fontWeight: FontWeight.bold,
+            color: Color(0xFFfa6386),
+          ),
+        ),
+        backgroundColor: Colors.white,
+        actions: [
+          if (_auth.currentUser != null)
+            IconButton(
+              icon: const Icon(Icons.logout, color: Colors.deepPurple),
+              onPressed: () async {
+                await _auth.signOut();
+                setState(() {});
+              },
+            )
+          else
+            Row(
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.pushNamed(context, '/login'),
+                  child: Text(
+                    'Login',
+                    style: GoogleFonts.notoSans(
+                      color: Colors.deepPurple,
+                      fontWeight: FontWeight.bold,
+                      fontSize: isDesktopView ? 16 : 14,
+                    ),
+                  ),
+                ),
+                // TextButton(
+                // onPressed: () => Navigator.pushNamed(context, '/signup'),
+                // child: Text(
+                // 'Sign Up',
+                // style: GoogleFonts.notoSans(
+                // color: Colors.deepPurple,
+                // fontWeight: FontWeight.bold,
+                // fontSize: isDesktopView ? 16 : 14,
+                // ),
+                // ),
+                // ),
+              ],
+            ),
+        ],
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
@@ -141,7 +142,8 @@ class _HomeScreenState extends State<HomeScreen> {
               EventBanner(size: size),
               Padding(
                 padding: EdgeInsets.symmetric(
-                  horizontal: ResponsiveBreakpoints.getHorizontalPadding(context),
+                  horizontal:
+                      ResponsiveBreakpoints.getHorizontalPadding(context),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -172,45 +174,48 @@ class _HomeScreenState extends State<HomeScreen> {
                       isDesktop: isDesktopView,
                       isTablet: isTabletView,
                     ),
-                    if (userRole == 'admin')
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 16.0),
-                        child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => AddProductScreen(),
-                              ),
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.deepPurple,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            minimumSize: Size(
-                              isDesktopView ? size.width * 0.2 : double.infinity,
-                              50,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.add, size: 20),
-                              const SizedBox(width: 8),
-                              Text(
-                                '상품 등록',
-                                style: GoogleFonts.notoSans(
-                                  fontSize: isDesktopView ? 18 : 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                    // 상품등록 관리자 버튼 -> 프로덕트 리스트로 옮김.
+                    // if (userRole == 'admin')
+                    //   Padding(
+                    //     padding: const EdgeInsets.symmetric(vertical: 16.0),
+                    //     child: ElevatedButton(
+                    //       onPressed: () {
+                    //         Navigator.push(
+                    //           context,
+                    //           MaterialPageRoute(
+                    //             builder: (context) => AddProductScreen(),
+                    //           ),
+                    //         );
+                    //       },
+                    //       style: ElevatedButton.styleFrom(
+                    //         backgroundColor: Colors.deepPurple,
+                    //         padding: const EdgeInsets.symmetric(vertical: 16),
+                    //         minimumSize: Size(
+                    //           isDesktopView
+                    //               ? size.width * 0.2
+                    //               : double.infinity,
+                    //           50,
+                    //         ),
+                    //         shape: RoundedRectangleBorder(
+                    //           borderRadius: BorderRadius.circular(8),
+                    //         ),
+                    //       ),
+                    //       child: Row(
+                    //         mainAxisAlignment: MainAxisAlignment.center,
+                    //         children: [
+                    //           const Icon(Icons.add, size: 20),
+                    //           const SizedBox(width: 8),
+                    //           Text(
+                    //             '상품 등록',
+                    //             style: GoogleFonts.notoSans(
+                    //               fontSize: isDesktopView ? 18 : 16,
+                    //               fontWeight: FontWeight.w600,
+                    //             ),
+                    //           ),
+                    //         ],
+                    //       ),
+                    //     ),
+                    //   ),
                   ],
                 ),
               ),
@@ -228,13 +233,15 @@ class _HomeScreenState extends State<HomeScreen> {
         selectedItemColor: Colors.deepPurple,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Trang chủ'),
-          BottomNavigationBarItem(icon: Icon(Icons.favorite), label: 'Yêu thích'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.favorite), label: 'Yêu thích'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Hồ sơ'),
         ],
       ),
     );
   }
 }
+
 class EventBanner extends StatefulWidget {
   final Size size;
 
@@ -288,9 +295,8 @@ class _EventBannerState extends State<EventBanner> {
     ];
 
     final isDesktop = ResponsiveBreakpoints.isDesktop(context);
-    double bannerHeight = isDesktop
-        ? 500
-        : MediaQuery.of(context).size.width * 9 / 16;
+    double bannerHeight =
+        isDesktop ? 500 : MediaQuery.of(context).size.width * 9 / 16;
 
     return Column(
       children: [
@@ -381,6 +387,7 @@ class _EventBannerState extends State<EventBanner> {
     );
   }
 }
+
 class CategorySection extends StatelessWidget {
   final Size size;
 
@@ -392,7 +399,11 @@ class CategorySection extends StatelessWidget {
     final isTablet = ResponsiveBreakpoints.isTablet(context);
 
     final List<Map<String, dynamic>> categories = [
-      {'name': 'Tất cả', 'icon': Icons.all_inclusive, 'color': Colors.purple[800]},
+      {
+        'name': 'Tất cả',
+        'icon': Icons.all_inclusive,
+        'color': Colors.purple[800]
+      },
       {'name': 'Dưỡng da', 'icon': Icons.spa, 'color': Colors.pink[400]},
       {'name': 'Trang điểm', 'icon': Icons.brush, 'color': Colors.orange[400]},
       {'name': 'Tẩy trang', 'icon': Icons.face, 'color': Colors.blue[400]},
@@ -404,10 +415,10 @@ class CategorySection extends StatelessWidget {
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: isDesktop ? 5 : 3, // 데스크탑에서는 5개, 태블릿은 3개로 설정
-          childAspectRatio: 1.2,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
+          crossAxisCount: isDesktop ? 5 : 3,
+          childAspectRatio: isDesktop ? 1.2 : 1.0, // 모바일에서 비율 조정
+          crossAxisSpacing: isDesktop ? 16 : 8, // 간격 줄임
+          mainAxisSpacing: isDesktop ? 16 : 8, // 간격 줄임
         ),
         itemCount: categories.length,
         itemBuilder: (context, index) => _buildCategoryItem(
@@ -417,21 +428,20 @@ class CategorySection extends StatelessWidget {
         ),
       );
     } else {
-      // 모바일 화면에서는 열 수를 1개 또는 2개로 설정
       return GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 3, // 모바일에서는 1개씩
-          childAspectRatio: 1.2,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 3,
+          childAspectRatio: 1.2, // 비율 조정
+          crossAxisSpacing: 8, // 간격 줄임
+          mainAxisSpacing: 8, // 간격 줄임
         ),
         itemCount: categories.length,
         itemBuilder: (context, index) => _buildCategoryItem(
           context,
           categories[index],
-          isDesktop,
+          false,
         ),
       );
     }
@@ -451,7 +461,8 @@ class CategorySection extends StatelessWidget {
     );
   }
 
-  Widget _buildCategoryItem(BuildContext context, Map<String, dynamic> category, bool isDesktop) {
+  Widget _buildCategoryItem(
+      BuildContext context, Map<String, dynamic> category, bool isDesktop) {
     return Material(
       elevation: 2,
       borderRadius: BorderRadius.circular(16),
@@ -460,42 +471,54 @@ class CategorySection extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => ProductListScreen(category: category['name'] as String),
+              builder: (context) =>
+                  ProductListScreen(category: category['name'] as String),
             ),
           );
         },
         borderRadius: BorderRadius.circular(16),
         child: Container(
-          padding: EdgeInsets.all(isDesktop ? 20 : 16),
-          margin: const EdgeInsets.symmetric(horizontal: 8),
+          padding: EdgeInsets.all(isDesktop ? 16 : 8), // 패딩 줄임
+          margin: const EdgeInsets.symmetric(horizontal: 2), // 마진 줄임
+          // padding: EdgeInsets.all(isDesktop ? 20 : 12),
+          // margin: const EdgeInsets.symmetric(horizontal: 4),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min, // 추가: 컬럼 크기 최소화
             children: [
               Container(
-                padding: EdgeInsets.all(isDesktop ? 16 : 12),
+                padding: EdgeInsets.all(isDesktop ? 16 : 10), // 아이콘 패딩 줄임
+                // padding: EdgeInsets.all(isDesktop ? 16 : 12),
                 decoration: BoxDecoration(
                   color: category['color'],
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   category['icon'] as IconData,
-                  size: isDesktop ? 32 : 24,
+                  size: isDesktop ? 32 : 24, // 아이콘 크기 줄임
+                  // size: isDesktop ? 32 : 24,
                   color: Colors.white,
                 ),
               ),
-              SizedBox(height: isDesktop ? 16 : 12),
-              Text(
-                category['name'] as String,
-                style: GoogleFonts.notoSans(
-                  fontSize: isDesktop ? 16 : 14,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey[800],
+              SizedBox(height: isDesktop ? 12 : 6), // 간격 줄임
+              // SizedBox(height: isDesktop ? 16 : 12),
+              Container(
+                width: double.infinity, // 컨테이너 전체 너비 사용
+                child: Text(
+                  category['name'] as String,
+                  style: GoogleFonts.notoSans(
+                    fontSize: isDesktop ? 14 : 13, // 폰트 크기 줄임
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[800],
+                  ),
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis, // 텍스트가 너무 길 경우 ...으로 표시
+                  maxLines: 1, // 한 줄로 제한
                 ),
-                textAlign: TextAlign.center,
               ),
             ],
           ),
@@ -504,6 +527,7 @@ class CategorySection extends StatelessWidget {
     );
   }
 }
+
 class RecentReviewsSection extends StatelessWidget {
   final FirebaseFirestore firestore;
   final bool isDesktop;
@@ -534,7 +558,8 @@ class RecentReviewsSection extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.rate_review_outlined, size: 48, color: Colors.grey[400]),
+                Icon(Icons.rate_review_outlined,
+                    size: 48, color: Colors.grey[400]),
                 const SizedBox(height: 16),
                 Text(
                   'Không có đánh giá nào.',
@@ -581,7 +606,8 @@ class RecentReviewsSection extends StatelessWidget {
             return FutureBuilder<DocumentSnapshot>(
               future: firestore.collection('products').doc(productId).get(),
               builder: (context, productSnapshot) {
-                if (productSnapshot.connectionState == ConnectionState.waiting) {
+                if (productSnapshot.connectionState ==
+                    ConnectionState.waiting) {
                   return _buildShimmerCard();
                 }
 
@@ -601,7 +627,8 @@ class RecentReviewsSection extends StatelessWidget {
                 final product = productSnapshot.data!;
                 final productName = product['name'];
 
-                return _buildReviewCard(context, review, false, productName: productName);
+                return _buildReviewCard(context, review, false,
+                    productName: productName);
               },
             );
           },
@@ -681,7 +708,9 @@ class RecentReviewsSection extends StatelessWidget {
     );
   }
 
-  Widget _buildReviewCard(BuildContext context, DocumentSnapshot review, bool isGrid, {String? productName}) {
+  Widget _buildReviewCard(
+      BuildContext context, DocumentSnapshot review, bool isGrid,
+      {String? productName}) {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
@@ -713,7 +742,8 @@ class RecentReviewsSection extends StatelessWidget {
                   print('User snapshot data: ${snapshot.data?.data()}');
 
                   // DocumentSnapshot을 Map으로 변환할 때 명시적으로 모든 필드를 포함
-                  final userData = snapshot.data?.data() as Map<String, dynamic>?;
+                  final userData =
+                      snapshot.data?.data() as Map<String, dynamic>?;
 
                   // 디버깅을 위한 더 자세한 로그
                   if (userData != null) {
@@ -729,7 +759,8 @@ class RecentReviewsSection extends StatelessWidget {
                         CircleAvatar(
                           backgroundColor: Colors.deepPurple[100],
                           radius: isDesktop ? 24 : 20,
-                          child: Text('!', style: TextStyle(color: Colors.deepPurple)),
+                          child: Text('!',
+                              style: TextStyle(color: Colors.deepPurple)),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -749,7 +780,8 @@ class RecentReviewsSection extends StatelessWidget {
                           backgroundColor: Colors.deepPurple[100],
                           radius: isDesktop ? 24 : 20,
                           child: const CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
                             strokeWidth: 2,
                           ),
                         ),
@@ -768,15 +800,15 @@ class RecentReviewsSection extends StatelessWidget {
                         //     : null,
                         radius: isDesktop ? 24 : 20,
                         child: (userData == null ||
-                            userData['profileImageUrl'] == null ||
-                            userData['profileImageUrl'].toString().isEmpty)
+                                userData['profileImageUrl'] == null ||
+                                userData['profileImageUrl'].toString().isEmpty)
                             ? Text(
-                          userData?['icon'] ?? '👤',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: isDesktop ? 20 : 16,
-                          ),
-                        )
+                                userData?['icon'] ?? '👤',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: isDesktop ? 20 : 16,
+                                ),
+                              )
                             : null,
                       ),
                       const SizedBox(width: 12),
