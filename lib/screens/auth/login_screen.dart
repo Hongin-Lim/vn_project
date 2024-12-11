@@ -1,7 +1,8 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+
+import '../../services/auth_service.dart';
+import '../../services/firestore_service.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -11,9 +12,10 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _auth = FirebaseAuth.instance;
-  final _firestore = FirebaseFirestore.instance;
+  final _authService = AuthService();
+  final _firestoreService = FirestoreService();
   bool _isLoading = false;
+
 
   Future<void> _signIn() async {
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
@@ -32,48 +34,20 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final userCredential = await _auth.signInWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
+      final user = await _authService.signIn(
+        _emailController.text.trim(),
+        _passwordController.text.trim(),
       );
 
-      if (userCredential.user != null) {
-// 마지막 로그인 시간 업데이트
-        await _firestore
-            .collection('users')
-            .doc(userCredential.user!.uid)
-            .update({
-          'lastLoginAt': DateTime.now(),
-        });
-
+      if (user != null) {
+        await _firestoreService.updateLastLogin(user.uid);
         Navigator.pushReplacementNamed(context, '/home');
       }
-    } on FirebaseAuthException catch (e) {
-      String errorMessage = 'Đăng nhập thất bại';
-
-      if (e.code == 'user-not-found') {
-        errorMessage = 'Không tìm thấy người dùng với email này';
-      } else if (e.code == 'wrong-password') {
-        errorMessage = 'Sai mật khẩu';
-      } else if (e.code == 'invalid-email') {
-        errorMessage = 'Email không hợp lệ';
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            errorMessage,
-            style: GoogleFonts.notoSans(),
-          ),
-          backgroundColor: Colors.red[400],
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Đã xảy ra lỗi: $e',
+            e.toString(),
             style: GoogleFonts.notoSans(),
           ),
           backgroundColor: Colors.red[400],

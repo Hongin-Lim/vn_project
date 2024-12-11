@@ -1,102 +1,93 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 
 import '../../models/user_model.dart';
-import '../../services/auth_service.dart';
-import '../../services/firestore_service.dart';
 import '../../utils/profile_util.dart';
 
-class SignupScreen extends StatefulWidget {
+class EditProfileScreen extends StatefulWidget {
+  final UserModel userModel;
+
+  const EditProfileScreen({Key? key, required this.userModel})
+      : super(key: key);
+
   @override
-  _SignupScreenState createState() => _SignupScreenState();
+  _EditProfileScreenState createState() => _EditProfileScreenState();
 }
 
-class _SignupScreenState extends State<SignupScreen> {
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _usernameController = TextEditingController();
-  final _nameController = TextEditingController();
-  final _ageController = TextEditingController();
-
-  String _selectedGender = 'Male';
-  String _selectedRegion = 'Vietnam';
-  String _selectedSkinType = 'Da thường';
-  List<String> _selectedSkinConditions = [];
-  String _selectedIcon = '😊';
-
-
+class _EditProfileScreenState extends State<EditProfileScreen> {
+  late TextEditingController _usernameController;
+  late TextEditingController _ageController;
+  late String _selectedGender;
+  late String _selectedRegion;
+  late String _selectedSkinType;
+  late List<String> _selectedSkinConditions;
+  late String _selectedIcon;
+  bool _isLoading = false;
 
   // ProfileUtils에서 옵션들 가져오기
   final genderOptions = ProfileUtils.genderOptions;
   final regionOptions = ProfileUtils.regionOptions;
   final skinTypeOptions = ProfileUtils.skinTypeOptions;
   final skinConditionsOptions = ProfileUtils.skinConditionsOptions;
-  final iconOptions = ProfileUtils.iconOptions;
+  final iconOptions = ProfileUtils.iconOptions;  // 아이콘 옵션 사용
 
-  final _authService = AuthService();
-  final _firestoreService = FirestoreService();  // 추가
+  @override
+  void initState() {
+    super.initState();
+    _usernameController =
+        TextEditingController(text: widget.userModel.username);
+    _ageController =
+        TextEditingController(text: widget.userModel.age.toString());
+    _selectedGender = widget.userModel.gender;
+    _selectedRegion = widget.userModel.region;
+    _selectedSkinType = widget.userModel.skinType;
+    _selectedSkinConditions = List.from(widget.userModel.skinConditions);
+    _selectedIcon = widget.userModel.icon;
+  }
 
-  void _signUp() async {
-    if (!_validateInputs()) return;
+  Future<void> _saveChanges() async {
+    setState(() => _isLoading = true);
 
     try {
-      User? user = await _authService.signUp(
-        _emailController.text.trim(),
-        _passwordController.text.trim(),
-      );
-
+      final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
-        final newUser = UserModel(
-          email: _emailController.text.trim(),
-          username: _usernameController.text.trim(),
-          gender: _selectedGender,
-          age: int.parse(_ageController.text.trim()),
-          region: _selectedRegion,
-          skinType: _selectedSkinType,
-          skinConditions: _selectedSkinConditions,
-          createdAt: DateTime.now(),
-          lastLoginAt: DateTime.now(),
-          profileImageUrl: '',
-          icon: _selectedIcon,
-          role: 'user',
-          grade: 'Bronze',
-        );
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .update({
+          'username': _usernameController.text.trim(),
+          'age': int.parse(_ageController.text.trim()),
+          'gender': _selectedGender,
+          'region': _selectedRegion,
+          'skinType': _selectedSkinType,
+          'skinConditions': _selectedSkinConditions,
+          'icon': _selectedIcon,
+        });
 
-        await _firestoreService.createUser(user.uid, newUser);
-        Navigator.pushReplacementNamed(context, '/login');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Cập nhật thông tin thành công',
+              style: GoogleFonts.notoSans(),
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pop(context);
       }
     } catch (e) {
-      _showErrorDialog('Lỗi đăng ký', e.toString());
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Lỗi: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() => _isLoading = false);
     }
-  }
-
-  bool _validateInputs() {
-    if (_emailController.text.isEmpty ||
-        _passwordController.text.isEmpty ||
-        _usernameController.text.isEmpty ||
-        _ageController.text.isEmpty) {
-      _showErrorDialog('입력 오류', '모든 필수 항목을 입력해주세요.');
-      return false;
-    }
-    return true;
-  }
-
-  void _showErrorDialog(String title, String message) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('확인'),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -108,8 +99,8 @@ class _SignupScreenState extends State<SignupScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Colors.deepPurple.shade50,
               Colors.white,
+              Colors.grey[50]!,
             ],
           ),
         ),
@@ -122,7 +113,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 children: [
                   _buildHeader(),
                   const SizedBox(height: 32),
-                  _buildSignupForm(),
+                  _buildEditForm(),
                   const SizedBox(height: 24),
                   _buildFooter(),
                 ],
@@ -159,14 +150,13 @@ class _SignupScreenState extends State<SignupScreen> {
                   textAlign: TextAlign.center,
                 ),
               ),
-              // 좌우 대칭을 위한 투명한 아이콘 버튼
-              SizedBox(width: 48),  // IconButton의 기본 너비만큼 공간 확보
+              SizedBox(width: 48),
             ],
           ),
           Container(
             margin: const EdgeInsets.only(top: 12, bottom: 2),
             child: Text(
-              "Tạo tài khoản mới",
+              "Chỉnh sửa thông tin",
               style: GoogleFonts.notoSans(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -178,7 +168,7 @@ class _SignupScreenState extends State<SignupScreen> {
           Container(
             margin: const EdgeInsets.only(bottom: 12),
             child: Text(
-              "Bắt đầu hành trình làm đẹp của bạn ngay hôm nay",
+              "Cập nhật thông tin cá nhân của bạn",
               textAlign: TextAlign.center,
               style: GoogleFonts.notoSans(
                 fontSize: 13,
@@ -200,7 +190,7 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
-  Widget _buildSignupForm() {
+  Widget _buildEditForm() {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -217,10 +207,6 @@ class _SignupScreenState extends State<SignupScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildTextField("Email", _emailController, Icons.email),
-          const SizedBox(height: 16),
-          _buildTextField("Mật khẩu", _passwordController, Icons.lock, isPassword: true),
-          const SizedBox(height: 16),
           _buildTextField("Tên người dùng", _usernameController, Icons.person),
           const SizedBox(height: 16),
           _buildTextField("Tuổi", _ageController, Icons.cake, isNumber: true),
@@ -236,12 +222,11 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   Widget _buildTextField(
-      String label,
-      TextEditingController controller,
-      IconData icon, {
-        bool isPassword = false,
-        bool isNumber = false,
-      }) {
+    String label,
+    TextEditingController controller,
+    IconData icon, {
+    bool isNumber = false,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -262,14 +247,13 @@ class _SignupScreenState extends State<SignupScreen> {
           ),
           child: TextField(
             controller: controller,
-            obscureText: isPassword,
             keyboardType: isNumber ? TextInputType.number : TextInputType.text,
             style: GoogleFonts.notoSans(),
             decoration: InputDecoration(
               prefixIcon: Icon(icon, color: Colors.grey[600], size: 20),
               border: InputBorder.none,
               contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             ),
           ),
         ),
@@ -354,9 +338,6 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
-
-
-// _buildSkinTypeSection() 메서드를 수정
   Widget _buildSkinTypeSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -410,6 +391,7 @@ class _SignupScreenState extends State<SignupScreen> {
             border: Border.all(color: Colors.grey[200]!),
           ),
           child: MultiSelectDialogField(
+            initialValue: _selectedSkinConditions,
             items: skinConditionsOptions.map((condition) => MultiSelectItem<String>(
               condition['key']!,
               condition['label']!,
@@ -507,63 +489,45 @@ class _SignupScreenState extends State<SignupScreen> {
         Container(
           width: double.infinity,
           height: 56,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.deepPurple, Colors.deepPurple.shade700],
-            ),
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.deepPurple.withOpacity(0.3),
-                blurRadius: 10,
-                offset: Offset(0, 5),
-              ),
-            ],
-          ),
           child: ElevatedButton(
-            onPressed: _signUp,
+            onPressed: _isLoading ? null : _saveChanges,
             style: ElevatedButton.styleFrom(
               backgroundColor: Color(0xFFfa6386),
-              shadowColor: Color(0xFFfa6386),
-              // backgroundColor: Colors.transparent,
-              // shadowColor: Colors.transparent,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
+              elevation: 0,
             ),
-            child: Text(
-              "Đăng ký",
-              style: GoogleFonts.notoSans(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              ),
-            ),
+            child: _isLoading
+                ? SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : Text(
+                    "Lưu thay đổi",
+                    style: GoogleFonts.notoSans(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
           ),
         ),
         const SizedBox(height: 24),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              "Bạn đã có tài khoản? ",
-              style: GoogleFonts.notoSans(
-                color: Colors.grey[600],
-                fontSize: 14,
-              ),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(
+            "Hủy",
+            style: GoogleFonts.notoSans(
+              color: Colors.grey[600],
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
             ),
-            TextButton(
-              onPressed: () => Navigator.pushNamed(context, '/login'),
-              child: Text(
-                "Login",
-                style: GoogleFonts.notoSans(
-                  color: Colors.deepPurple,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ],
     );
@@ -571,10 +535,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
     _usernameController.dispose();
-    _nameController.dispose();
     _ageController.dispose();
     super.dispose();
   }

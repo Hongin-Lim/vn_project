@@ -8,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:vn_project/screens/review/review_detail_screen.dart';
 
+import 'auth/user_profile_screen.dart';
 import 'product/product_list_screen.dart';
 
 // 반응형 유틸리티 클래스
@@ -223,18 +224,59 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
+      // 하단 홈 / 즐겨찾기 / 프로필 탭
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
+          if (index == 0) { // 홈 탭
+            Navigator.pushReplacementNamed(context, '/home');
+          } else if (index == 2) { // 프로필 탭
+            // 로그인 상태 확인
+            final user = FirebaseAuth.instance.currentUser;
+            if (user != null) {
+              // 로그인된 경우 프로필 화면으로 이동
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => UserProfileScreen(),
+                ),
+              ).then((value) {
+                setState(() {
+                  _currentIndex = 0;
+                });
+              });
+            } else {
+              // 로그인되지 않은 경우 SnackBar 표시
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Vui lòng đăng nhập để xem hồ sơ',
+                    style: GoogleFonts.notoSans(),
+                  ),
+                  action: SnackBarAction(
+                    label: 'Đăng nhập',
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/login');
+                    },
+                  ),
+                  behavior: SnackBarBehavior.floating,
+                  backgroundColor: Color(0xFFfa6386),
+                ),
+              );
+              setState(() {
+                _currentIndex = 0;
+              });
+            }
+          } else {
+            setState(() {
+              _currentIndex = index;
+            });
+          }
         },
-        selectedItemColor: Colors.deepPurple,
+        selectedItemColor: Color(0xFFfa6386),
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Trang chủ'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.favorite), label: 'Yêu thích'),
+          BottomNavigationBarItem(icon: Icon(Icons.favorite), label: 'Yêu thích'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Hồ sơ'),
         ],
       ),
@@ -290,8 +332,8 @@ class _EventBannerState extends State<EventBanner> {
   Widget build(BuildContext context) {
     const List<String> bannerImages = [
       'https://hongin-lim.github.io/vn_project/images/slide-004.jpg',
-      'https://hongin-lim.github.io/vn_project/images/slide-003.jpg',
-      'https://hongin-lim.github.io/vn_project/images/slide-002.png',
+      'https://hongin-lim.github.io/vn_project/images/slide-006.jpg',
+      'https://hongin-lim.github.io/vn_project/images/slide-002.jpg',
     ];
 
     final isDesktop = ResponsiveBreakpoints.isDesktop(context);

@@ -1,6 +1,6 @@
 {
-    "name": "ReviewHub",
-    "short_name": "ReviewHub",
+    "name": "Review Này",
+    "short_name": "Review Này",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#ffffff",
@@ -10,23 +10,23 @@
     "prefer_related_applications": false,
     "icons": [
         {
-            "src": "icons/Icon-192.png",
+            "src": "icons/Reviewnay192.png",
             "sizes": "192x192",
             "type": "image/png"
         },
         {
-            "src": "icons/Icon-512.png",
+            "src": "icons/Reviewnay512.png",
             "sizes": "512x512",
             "type": "image/png"
         },
         {
-            "src": "icons/Icon-maskable-192.png",
+            "src": "icons/Reviewnay192.png",
             "sizes": "192x192",
             "type": "image/png",
             "purpose": "maskable"
         },
         {
-            "src": "icons/Icon-maskable-512.png",
+            "src": "icons/Reviewnay512.png",
             "sizes": "512x512",
             "type": "image/png",
             "purpose": "maskable"

@@ -5,11 +5,63 @@ import 'package:firebase_storage/firebase_storage.dart';
 
 import '../models/product_model.dart';
 import '../models/review.model.dart';
+import '../models/user_model.dart';
 
 /// Firestore와 Firebase Storage를 사용한 데이터 관리 서비스
 class FirestoreService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
+
+  // 사용자 생성
+  Future<void> createUser(String userId, UserModel user) async {
+    try {
+      await _firestore.collection('users').doc(userId).set(user.toFirestore());
+    } catch (e) {
+      throw Exception('Không thể tạo người dùng: $e');
+    }
+  }
+
+  // 사용자 정보 업데이트
+  Future<void> updateUser(String userId, Map<String, dynamic> data) async {
+    try {
+      await _firestore.collection('users').doc(userId).update(data);
+    } catch (e) {
+      throw Exception('Không thể cập nhật thông tin người dùng: $e');
+    }
+  }
+
+  // 사용자 데이터 로드
+  Future<UserModel?> loadUserData(String userId) async {
+    try {
+      final doc = await _firestore.collection('users').doc(userId).get();
+      if (doc.exists) {
+        return UserModel.fromFirestore(doc);
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Không thể tải thông tin người dùng: $e');
+    }
+}
+
+  // 마지막 로그인 시간 업데이트
+  Future<void> updateLastLogin(String userId) async {
+    try {
+      await _firestore.collection('users').doc(userId).update({
+        'lastLoginAt': DateTime.now(),
+      });
+    } catch (e) {
+      throw Exception('Không thể cập nhật thời gian đăng nhập cuối cùng: $e');
+    }
+  }
+
+  // 사용자 데이터 삭제
+  Future<void> deleteUserData(String userId) async {
+    try {
+      await _firestore.collection('users').doc(userId).delete();
+    } catch (e) {
+      throw Exception('Không thể xóa dữ liệu người dùng: $e');
+    }
+  }
 
   /// Firebase Storage에 사진 업로드 후 URL 반환
   Future<String> uploadPhoto(String userId, String filePath) async {
