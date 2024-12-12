@@ -94,35 +94,35 @@ class FirestoreService {
     }
   }
 
-  Future<List<Product>> fetchProducts({String? category}) async {
-    try {
-      Query<Map<String, dynamic>> query = _firestore.collection('products');
-      if (category != null && category != 'Tất cả') {
-        query = query.where('category', isEqualTo: category);
-      }
-      final QuerySnapshot<Map<String, dynamic>> snapshot = await query.get();
+  // Future<List<Product>> fetchProducts({String? category}) async {
+  //   try {
+  //     Query<Map<String, dynamic>> query = _firestore.collection('products');
+  //     if (category != null && category != 'Tất cả') {
+  //       query = query.where('category', isEqualTo: category);
+  //     }
+  //     final QuerySnapshot<Map<String, dynamic>> snapshot = await query.get();
+  //
+  //     return snapshot.docs.map((
+  //         QueryDocumentSnapshot<Map<String, dynamic>> doc) {
+  //       return Product.fromFirestore(doc);
+  //     }).toList();
+  //   } catch (e) {
+  //     throw Exception('제품 목록 가져오기 실패: $e');
+  //   }
+  // }
 
-      return snapshot.docs.map((
-          QueryDocumentSnapshot<Map<String, dynamic>> doc) {
-        return Product.fromFirestore(doc);
-      }).toList();
-    } catch (e) {
-      throw Exception('제품 목록 가져오기 실패: $e');
-    }
-  }
-
-  /// 특정 제품 가져오기
-  Future<Product?> fetchProductById(String productId) async {
-    try {
-      final doc = await _firestore.collection('products').doc(productId).get();
-      if (doc.exists) {
-        return Product.fromFirestore(doc);
-      }
-      return null;
-    } catch (e) {
-      throw Exception('제품 정보 가져오기 실패: $e');
-    }
-  }
+  // /// 특정 제품 가져오기
+  // Future<Product?> fetchProductById(String productId) async {
+  //   try {
+  //     final doc = await _firestore.collection('products').doc(productId).get();
+  //     if (doc.exists) {
+  //       return Product.fromFirestore(doc);
+  //     }
+  //     return null;
+  //   } catch (e) {
+  //     throw Exception('제품 정보 가져오기 실패: $e');
+  //   }
+  // }
 
   /// 리뷰 가져오기 (특정 제품에 대한)
   Future<List<Review>> fetchReviews(String productId) async {
@@ -211,31 +211,101 @@ class FirestoreService {
     }
   }
 
-  /// 제품 수정
-  Future<void> updateProduct(String productId, Product updatedProduct) async {
-    try {
-      await _firestore.collection('products').doc(productId).update(
-          updatedProduct.toFirestore());
-    } catch (e) {
-      throw Exception('제품 수정 실패: $e');
-    }
-  }
 
-  /// 제품 추가
+
+  /// [product]: 추가할 상품 정보
+  /// throws Exception: Firestore 작업 실패 시
   Future<void> addProduct(Product product) async {
     try {
-      await _firestore.collection('products').add(product.toFirestore());
+      await _firestore.collection('products').add({
+        'name': product.name,
+        'description': product.description,
+        'category': product.category,
+        'imageUrl': product.imageUrl,
+        'reviewCount': product.reviewCount,     // 초기값 0
+        'averageRating': product.averageRating, // 초기값 0.0
+        'createdAt': FieldValue.serverTimestamp(),
+      });
     } catch (e) {
-      throw Exception('제품 추가 실패: $e');
+      throw Exception('상품 추가 실패: $e');
     }
   }
 
-  /// 제품 삭제
+  /// 카테고리별 상품 목록 조회
+  /// 페이징 처리된 상품 목록 조회: product_list_screen.dart에서 사용
+  Future<List<Product>> getProducts({
+    String? category,
+    Product? lastProduct,
+    int limit = 20,
+  }) async {
+    try {
+      Query<Map<String, dynamic>> query = _firestore.collection('products')
+          .limit(limit);
+
+      if (category != null && category != 'Tất cả') {
+        query = query.where('category', isEqualTo: category);
+      }
+
+      if (lastProduct != null) {
+        query = query.startAfterDocument(
+            await _firestore.collection('products').doc(lastProduct.id).get()
+        );
+      }
+
+      final snapshot = await query.get();
+      return snapshot.docs.map((doc) => Product.fromFirestore(doc)).toList();
+    } catch (e) {
+      throw Exception('상품 목록 조회 실패: $e');
+    }
+  }
+
+  /// 특정 상품의 상세 정보 조회: product_detail_screen.dart에서 사용
+  Future<Product?> getProductById(String productId) async {
+    try {
+      final doc = await _firestore.collection('products').doc(productId).get();
+      if (doc.exists) {
+        return Product.fromFirestore(doc);
+      }
+      return null;
+    } catch (e) {
+      throw Exception('상품 정보 조회 실패: $e');
+    }
+  }
+
+  /// 특정 상품의 리뷰 목록 스트림 조회: product_detail_screen.dart에서 사용
+  Stream<QuerySnapshot> getProductReviews(String productId) {
+    return _firestore
+        .collection('reviews')
+        .where('productId', isEqualTo: productId)
+        .orderBy('createdAt', descending: true)
+        .snapshots();
+  }
+
+  /// 사용자 권한 확인: product_detail_screen.dart에서 사용
+  Future<bool> isAdmin(String uid) async {
+    try {
+      final doc = await _firestore.collection('users').doc(uid).get();
+      return doc.exists && doc.data()?['role'] == 'admin';
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// 상품 정보 수정: product_detail_screen.dart에서 사용
+  Future<void> updateProduct(String productId, Map<String, dynamic> data) async {
+    try {
+      await _firestore.collection('products').doc(productId).update(data);
+    } catch (e) {
+      throw Exception('상품 정보 수정 실패: $e');
+    }
+  }
+
+  /// 상품 삭제: product_detail_screen.dart에서 사용
   Future<void> deleteProduct(String productId) async {
     try {
       await _firestore.collection('products').doc(productId).delete();
     } catch (e) {
-      throw Exception('제품 삭제 실패: $e');
+      throw Exception('상품 삭제 실패: $e');
     }
   }
 
@@ -249,29 +319,3 @@ class FirestoreService {
   }
 }
 
-
-// 사용안함
-// /// 홈화면 관련
-// // 홈 최근 리뷰 스트림
-// Stream<QuerySnapshot> getRecentReviews(int limit) {
-//   return _firestore
-//       .collection('reviews')
-//       .orderBy('createdAt', descending: true)
-//       .limit(limit)
-//       .snapshots();
-// }
-//
-// // 홈 제품 정보 가져오기
-// Future<DocumentSnapshot?> getProduct(String productId) async {
-//   try {
-//     return await _firestore.collection('products').doc(productId).get();
-//   } catch (e) {
-//     throw Exception('Không thể tải thông tin sản phẩm: $e');
-//   }
-// }
-//
-// // 홈 사용자 정보 스트림
-// Stream<DocumentSnapshot> getUserStream(String userId) {
-//   return _firestore.collection('users').doc(userId).snapshots();
-// }
-// }

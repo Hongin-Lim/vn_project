@@ -1,689 +1,314 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+// lib/screens/product/product_detail_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../utils/grade_utils.dart';
-import '../product/ingredient_analysis_screen.dart';
-import '../review/add_review_screen.dart';
-import '../review/review_detail_screen.dart';
+import '../../models/product_model.dart';
+import '../../services/auth_service.dart';
+import '../../services/firestore_service.dart';
+import 'widgets/product_action_buttons.dart';
+import 'widgets/product_info_section.dart';
+import 'widgets/product_review_section.dart';
 
+/// 상품 상세 정보 화면
 class ProductDetailScreen extends StatefulWidget {
   final String productId;
 
-  const ProductDetailScreen({required this.productId, Key? key}) : super(key: key);
+  const ProductDetailScreen({
+    required this.productId,
+    Key? key,
+  }) : super(key: key);
 
   @override
   _ProductDetailScreenState createState() => _ProductDetailScreenState();
 }
 
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  Map<String, dynamic>? _productData;
+  final _firestoreService = FirestoreService();
+  final _authService = AuthService();
+  Product? _product;
+  bool _isLoading = true;
+  bool _isAdmin = false;
 
   @override
   void initState() {
     super.initState();
-    _loadProductData();
+    _initialize();
   }
 
+  /// 초기 데이터 로드
+  Future<void> _initialize() async {
+    await Future.wait([
+      _loadProductData(),
+      _checkAdminStatus(),
+    ]);
+  }
+  /// 상품 데이터 로드
   Future<void> _loadProductData() async {
-    final productDoc = await _firestore.collection('products').doc(widget.productId).get();
-    if (productDoc.exists) {
-      setState(() {
-        _productData = productDoc.data();
-      });
+    try {
+      setState(() => _isLoading = true);
+      final product = await _firestoreService.getProductById(widget.productId);
+      setState(() => _product = product);
+    } catch (e) {
+      _showErrorMessage('상품 정보 로드 실패: $e');
+    } finally {
+      setState(() => _isLoading = false);
     }
+  }
+
+  /// 에러 메시지 표시
+  void _showErrorMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: GoogleFonts.notoSans()),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Theme(
-      data: Theme.of(context).copyWith(
-        textTheme: GoogleFonts.robotoTextTheme(Theme.of(context).textTheme),
+    return Scaffold(
+      backgroundColor: Colors.grey[50],
+      appBar: _buildAppBar(),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _product == null
+          ? _buildErrorView()
+          : _buildContent(),
+    );
+  }
+
+  /// 앱바 구성
+  @override
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      elevation: 0,
+      backgroundColor: Colors.white,
+      centerTitle: true,
+      title: Text(
+        'Chi tiết sản phẩm',
+        style: GoogleFonts.notoSans(
+          color: Colors.black87,
+          fontWeight: FontWeight.w600,
+        ),
       ),
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(
-            'Chi tiết sản phẩm"',
-            style: GoogleFonts.roboto(
-              color: Colors.black87,
-              fontWeight: FontWeight.w600,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back_ios, color: Colors.black87),
+        onPressed: () => Navigator.pop(context),
+      ),
+      actions: [
+        if (_isAdmin) ...[
+          IconButton(
+            icon: const Icon(Icons.edit, color: Colors.black87),
+            onPressed: _showEditDialog,
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete, color: Colors.red),
+            onPressed: _showDeleteDialog,
+          ),
+        ],
+        IconButton(
+          icon: const Icon(Icons.share_outlined, color: Colors.black87),
+          onPressed: () {}, // TODO: 공유 기능 구현
+        ),
+      ],
+    );
+  }
+
+  /// 에러 화면 구성
+  Widget _buildErrorView() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.error_outline, size: 48, color: Colors.grey[400]),
+          const SizedBox(height: 16),
+          Text(
+            '상품 정보를 불러올 수 없습니다',
+            style: GoogleFonts.notoSans(
+              fontSize: 16,
+              color: Colors.grey[600],
             ),
           ),
-          backgroundColor: Colors.white,
-          elevation: 0,
-          iconTheme: const IconThemeData(color: Colors.black87),
-        ),
-        body: _productData == null
-            ? const Center(child: CircularProgressIndicator())
-            : SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                height: 300,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  image: DecorationImage(
-                    image: NetworkImage(
-                      _productData?['imageUrl'] ?? 'https://via.placeholder.com/400',
-                    ),
-                    fit: BoxFit.cover,
-                  ),
-                ),
+          const SizedBox(height: 24),
+          TextButton(
+            onPressed: _loadProductData,
+            child: Text(
+              '다시 시도',
+              style: GoogleFonts.notoSans(
+                color: Colors.indigo,
+                fontWeight: FontWeight.w600,
               ),
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _productData?['name'] ?? '상품 이름 없음',
-                      style: GoogleFonts.roboto(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      _productData?['description'] ?? '상품 설명 없음',
-                      style: GoogleFonts.roboto(
-                        fontSize: 16,
-                        height: 1.5,
-                        color: Colors.black54,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[50],
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            children: [
-                              Text(
-                                '평균 평점',
-                                style: GoogleFonts.roboto(
-                                  fontSize: 14,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Row(
-                                children: [
-                                  const Icon(
-                                    Icons.star,
-                                    color: Colors.amber,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    '${(double.tryParse(_productData?['averageRating']?.toString() ?? '0') ?? 0).toStringAsFixed(1)}',
-                                    style: GoogleFonts.roboto(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black87,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                          Column(
-                            children: [
-                              Text(
-                                '리뷰 수',
-                                style: GoogleFonts.roboto(
-                                  fontSize: 14,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '${_productData?['reviewCount'] ?? 0}개',
-                                style: GoogleFonts.roboto(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Divider(height: 1),
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => IngredientAnalysisScreen(),
-                            ),
-                          );
-                        },
-                        icon: const Icon(Icons.science),
-                        label: Text(
-                          'Xem thành phần',
-                          style: GoogleFonts.notoSans(),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: Colors.indigo,
-                          elevation: 0,
-                          side: const BorderSide(color: Colors.indigo),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => AddReviewScreen(
-                                productId: widget.productId,
-                                productName: _productData?['name'] ?? '',
-                                productImage: _productData?['imageUrl'] ?? '',
-                              ),
-                            ),
-                          );
-                        },
-                        icon: const Icon(
-                          Icons.edit,
-                          color: Colors.white,  // 아이콘 색상을 흰색으로 설정
-                        ),
-                        label: Text(
-                          'Viết đánh giá',
-                          style: GoogleFonts.notoSans(
-                            color: Colors.white,  // 텍스트 색상을 흰색으로 설정
-                            fontWeight: FontWeight.w500,  // 약간의 두께 추가
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.indigo,
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '리뷰',
-                      style: GoogleFonts.roboto(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        // 전체 리뷰 보기 화면으로 이동
-                      },
-                      child: Text(
-                        '전체보기',
-                        style: GoogleFonts.roboto(
-                          color: Colors.indigo,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              StreamBuilder<QuerySnapshot>(
-                stream: _firestore
-                    .collection('reviews')
-                    .where('productId', isEqualTo: widget.productId)
-                    .orderBy('createdAt', descending: true)
-                    .snapshots(),
-                builder: (context, snapshot) {
-                  print('Connection state: ${snapshot.connectionState}');
-                  print('Has data: ${snapshot.hasData}');
-                  if (snapshot.hasData) {
-                    print('Documents count: ${snapshot.data!.docs.length}');
-                    print('ProductId being queried: ${widget.productId}');
-                  }
-
-                  if (snapshot.hasError) {
-                    print('Stream error: ${snapshot.error}');
-                    return Center(
-                      child: Text(
-                        '데이터를 불러오는데 실패했습니다.',
-                        style: GoogleFonts.roboto(color: Colors.red),
-                      ),
-                    );
-                  }
-
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-
-                  if (!snapshot.hasData) {
-                    return Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(24.0),
-                        child: Column(
-                          children: [
-                            Icon(
-                              Icons.rate_review_outlined,
-                              size: 48,
-                              color: Colors.grey[400],
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              '리뷰를 불러오는 중입니다...',
-                              style: GoogleFonts.roboto(
-                                fontSize: 16,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }
-
-                  final reviews = snapshot.data!.docs;
-
-                  if (reviews.isEmpty) {
-                    return Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(24.0),
-                        child: Column(
-                          children: [
-                            Icon(
-                              Icons.rate_review_outlined,
-                              size: 48,
-                              color: Colors.grey[400],
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              '첫 번째 리뷰를 작성해보세요!',
-                              style: GoogleFonts.roboto(
-                                fontSize: 16,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }
-
-                  return ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: reviews.length,
-                    padding: const EdgeInsets.all(16),
-                    itemBuilder: (context, index) {
-                      final review = reviews[index].data() as Map<String, dynamic>;
-                      final createdAt = review['createdAt'] as Timestamp?;
-
-                      return FutureBuilder<DocumentSnapshot>(
-                        future: FirebaseFirestore.instance
-                            .collection('users')
-                            .doc(review['userId'])
-                            .get(),
-                        builder: (context, userSnapshot) {
-                          final userData = userSnapshot.data?.data() as Map<String, dynamic>?;
-
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 16),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.grey.withOpacity(0.08),
-                                  blurRadius: 20,
-                                  spreadRadius: 0,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // 상품 정보 섹션
-                                Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4), // 패딩 줄임
-                                  decoration: BoxDecoration(
-                                    color: Colors.deepPurple[50], // 그라데이션 대신 깔끔한 단색
-                                    borderRadius: const BorderRadius.vertical(
-                                      top: Radius.circular(16),
-                                    ),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      ClipRRect( // Container 대신 ClipRRect 사용
-                                        borderRadius: BorderRadius.circular(6), // 라운드 값 줄임
-                                        child: Image.network(
-                                          _productData?['imageUrl'] ?? '',
-                                          width: 32, // 크기 줄임
-                                          height: 32, // 크기 줄임
-                                          fit: BoxFit.cover,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 10),
-                                      Expanded(
-                                        child: Text(
-                                          _productData?['name'] ?? '',
-                                          style: GoogleFonts.notoSans(
-                                            fontSize: 13, // 폰트 크기 줄임
-                                            fontWeight: FontWeight.w500,
-                                            color: Colors.grey[800], // 색상 톤 조정
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                // 유저 정보 섹션
-                                Container(
-                                  padding: const EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey[50],
-                                    border: Border(
-                                      top: BorderSide(
-                                        color: Colors.grey.withOpacity(0.1),
-                                        width: 1,
-                                      ),
-                                    ),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Stack(
-                                        children: [
-                                          CircleAvatar(
-                                            radius: 24,
-                                            backgroundColor: Colors.indigo.withOpacity(0.1),
-                                            backgroundImage: (userData != null &&
-                                                userData['profileImageUrl'] != null &&
-                                                userData['profileImageUrl'].toString().isNotEmpty)
-                                                ? NetworkImage(userData['profileImageUrl'])
-                                                : null,
-                                            child: (userData == null ||
-                                                userData['profileImageUrl'] == null ||
-                                                userData['profileImageUrl'].toString().isEmpty)
-                                                ? (userData?['icon'] != null)
-                                                ? Text(
-                                              userData!['icon'],
-                                              style: const TextStyle(fontSize: 24),
-                                            )
-                                                : Icon(
-                                              Icons.person_outline_rounded,
-                                              size: 28,
-                                              color: Colors.indigo[400],
-                                            )
-                                                : null,
-                                          ),
-                                          Positioned(
-                                            bottom: 0,
-                                            right: 0,
-                                            child: Container(
-                                              decoration: const BoxDecoration(
-                                                color: Colors.white,
-                                                shape: BoxShape.circle,
-                                              ),
-                                              child: Text(
-                                                getGradeIcon(userData?['grade']),
-                                                style: const TextStyle(fontSize: 14),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Row(
-                                              children: [
-                                                Text(
-                                                  userData?['username'] ?? 'Người dùng ẩn danh',
-                                                  style: GoogleFonts.notoSans(
-                                                    fontSize: 15,
-                                                    fontWeight: FontWeight.w600,
-                                                    color: Colors.black87,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                            const SizedBox(height: 6),
-                                            Wrap(
-                                              spacing: 6,
-                                              runSpacing: 6,
-                                              children: [
-                                                if (userData?['skinType'] != null)
-                                                  Container(
-                                                    padding: const EdgeInsets.symmetric(
-                                                      horizontal: 8,
-                                                      vertical: 2,
-                                                    ),
-                                                    decoration: BoxDecoration(
-                                                      color: Colors.indigo.withOpacity(0.1),
-                                                      borderRadius: BorderRadius.circular(12),
-                                                    ),
-                                                    child: Text(
-                                                      userData!['skinType'],
-                                                      style: GoogleFonts.notoSans(
-                                                        fontSize: 12,
-                                                        color: Colors.indigo,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                if (userData?['skinConditions'] != null)
-                                                  ...(userData!['skinConditions'] as List).map(
-                                                        (condition) => Container(
-                                                      padding: const EdgeInsets.symmetric(
-                                                        horizontal: 8,
-                                                        vertical: 2,
-                                                      ),
-                                                      decoration: BoxDecoration(
-                                                        color: Colors.teal.withOpacity(0.1),
-                                                        borderRadius: BorderRadius.circular(12),
-                                                      ),
-                                                      child: Text(
-                                                        condition,
-                                                        style: GoogleFonts.notoSans(
-                                                          fontSize: 12,
-                                                          color: Colors.teal,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ).toList(),
-                                              ],
-                                            ),
-                                            const SizedBox(height: 6),
-                                            Row(
-                                              children: List.generate(
-                                                5,
-                                                    (index) => Icon(
-                                                  index < (review['rating'] ?? 0)
-                                                      ? Icons.star_rounded
-                                                      : Icons.star_outline_rounded,
-                                                  color: Colors.amber[400],
-                                                  size: 16,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      if (createdAt != null)
-                                        Text(
-                                          createdAt.toDate().toString().split(' ')[0],
-                                          style: GoogleFonts.notoSans(
-                                            fontSize: 12,
-                                            color: Colors.grey[500],
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                ),
-                                // 리뷰 내용 섹션 (기존과 동일)
-                                Padding(
-                                  padding: const EdgeInsets.all(16),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        review['title'] ?? '',
-                                        style: GoogleFonts.notoSans(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.black87,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        review['content'] ?? '',
-                                        style: GoogleFonts.notoSans(
-                                          fontSize: 14,
-                                          height: 1.5,
-                                          color: Colors.black87,
-                                        ),
-                                        maxLines: 3,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      if ((review['photoUrls'] as List?)?.isNotEmpty ?? false) ...[
-                                        const SizedBox(height: 12),
-                                        SizedBox(
-                                          height: 100,
-                                          child: ListView.builder(
-                                            scrollDirection: Axis.horizontal,
-                                            itemCount: (review['photoUrls'] as List).length,
-                                            itemBuilder: (context, photoIndex) {
-                                              return Container(
-                                                margin: const EdgeInsets.only(right: 8),
-                                                decoration: BoxDecoration(
-                                                  borderRadius: BorderRadius.circular(12),
-                                                  boxShadow: [
-                                                    BoxShadow(
-                                                      color: Colors.black.withOpacity(0.08),
-                                                      blurRadius: 8,
-                                                      spreadRadius: 0,
-                                                      offset: const Offset(0, 2),
-                                                    ),
-                                                  ],
-                                                ),
-                                                child: ClipRRect(
-                                                  borderRadius: BorderRadius.circular(12),
-                                                  child: Image.network(
-                                                    review['photoUrls'][photoIndex],
-                                                    width: 100,
-                                                    height: 100,
-                                                    fit: BoxFit.cover,
-                                                    errorBuilder: (context, error, stackTrace) {
-                                                      return Container(
-                                                        width: 100,
-                                                        height: 100,
-                                                        color: Colors.grey[200],
-                                                        child: Icon(
-                                                          Icons.error_outline,
-                                                          color: Colors.grey[400],
-                                                        ),
-                                                      );
-                                                    },
-                                                  ),
-                                                ),
-                                              );
-                                            },
-                                          ),
-                                        ),
-                                      ],
-                                    ],
-                                  ),
-                                ),
-                                // 하단 버튼
-                                Container(
-                                  decoration: const BoxDecoration(
-                                    border: Border(
-                                      top: BorderSide(color: Colors.black12),
-                                    ),
-                                  ),
-                                  child: TextButton(
-                                    onPressed: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => ReviewDetailScreen(
-                                            reviewId: reviews[index].id,
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                    style: TextButton.styleFrom(
-                                      foregroundColor: Colors.indigo,
-                                      padding: const EdgeInsets.symmetric(vertical: 12),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: const BorderRadius.vertical(
-                                          bottom: Radius.circular(16),
-                                        ),
-                                      ),
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          '자세히 보기',
-                                          style: GoogleFonts.notoSans(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 4),
-                                        const Icon(Icons.arrow_forward_ios, size: 14),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  );
-                },
-              )
-            ],
+            ),
           ),
+        ],
+      ),
+    );
+  }
+
+  /// 메인 콘텐츠 구성
+  Widget _buildContent() {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildProductImage(),
+          ProductInfoSection(product: _product!),
+          ProductActionButtons(
+            productId: widget.productId,
+            productName: _product!.name,
+            productImage: _product!.imageUrl,
+          ),
+          ProductReviewSection(productId: widget.productId),
+        ],
+      ),
+    );
+  }
+
+  /// 상품 이미지 구성
+  Widget _buildProductImage() {
+    return Container(
+      height: 300,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.grey[200],
+        image: DecorationImage(
+          image: NetworkImage(_product!.imageUrl),
+          fit: BoxFit.cover,
         ),
       ),
     );
   }
+  /// 관리자 권한 확인
+  Future<void> _checkAdminStatus() async {
+    final user = _authService.currentUser;
+    if (user != null) {
+      final isAdmin = await _firestoreService.isAdmin(user.uid);
+      setState(() => _isAdmin = isAdmin);
+    }
+  }
+
+  /// 상품 수정 다이얼로그 표시
+  Future<void> _showEditDialog() async {
+    final nameController = TextEditingController(text: _product?.name);
+    final descriptionController = TextEditingController(text: _product?.description);
+    final imageUrlController = TextEditingController(text: _product?.imageUrl);
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('상품 정보 수정', style: GoogleFonts.notoSans()),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(labelText: '상품명'),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: descriptionController,
+                decoration: const InputDecoration(labelText: '설명'),
+                maxLines: 3,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: imageUrlController,
+                decoration: const InputDecoration(labelText: '이미지 URL'),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('취소', style: GoogleFonts.notoSans()),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.indigo,
+            ),
+            child: Text('수정', style: GoogleFonts.notoSans(
+              color: Colors.white,
+            )),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true) {
+      try {
+        await _firestoreService.updateProduct(
+          widget.productId,
+          {
+            'name': nameController.text,
+            'description': descriptionController.text,
+            'imageUrl': imageUrlController.text,
+          },
+        );
+        await _loadProductData();  // 데이터 새로고침
+        _showSuccessMessage('상품 정보가 수정되었습니다.');
+      } catch (e) {
+        _showErrorMessage(e.toString());
+      }
+    }
+
+    nameController.dispose();
+    descriptionController.dispose();
+    imageUrlController.dispose();
+  }
+
+  /// 상품 삭제 확인 다이얼로그 표시
+  Future<void> _showDeleteDialog() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('상품 삭제', style: GoogleFonts.notoSans()),
+        content: Text(
+          '이 상품을 정말 삭제하시겠습니까?\n삭제된 데이터는 복구할 수 없습니다.',
+          style: GoogleFonts.notoSans(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('취소', style: GoogleFonts.notoSans()),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            child: Text('삭제', style: GoogleFonts.notoSans(
+              color: Colors.white,
+            )
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true) {
+      try {
+        await _firestoreService.deleteProduct(widget.productId);
+        _showSuccessMessage('상품이 삭제되었습니다.');
+        Navigator.pop(context);  // 화면 닫기
+      } catch (e) {
+        _showErrorMessage(e.toString());
+      }
+    }
+  }
+
+  /// 성공 메시지 표시
+  void _showSuccessMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: GoogleFonts.notoSans()),
+        backgroundColor: Colors.green,
+      ),
+    );
+  }
+
 }
