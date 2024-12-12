@@ -1,9 +1,9 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../models/user_model.dart';
+import '../../services/auth_service.dart';
+import '../../services/firestore_service.dart';
 import 'edit_profile_screen.dart';
 
 class UserProfileScreen extends StatefulWidget {
@@ -12,8 +12,8 @@ class UserProfileScreen extends StatefulWidget {
 }
 
 class _UserProfileScreenState extends State<UserProfileScreen> {
-  final _auth = FirebaseAuth.instance;
-  final _firestore = FirebaseFirestore.instance;
+  final _authService = AuthService();
+  final _firestoreService = FirestoreService();
   UserModel? _userModel;
   bool _isLoading = true;
 
@@ -25,15 +25,13 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
   Future<void> _loadUserData() async {
     try {
-      final user = _auth.currentUser;
+      final user = _authService.currentUser;
       if (user != null) {
-        final doc = await _firestore.collection('users').doc(user.uid).get();
-        if (doc.exists) {
-          setState(() {
-            _userModel = UserModel.fromFirestore(doc);
-            _isLoading = false;
-          });
-        }
+        final userData = await _firestoreService.loadUserData(user.uid);
+        setState(() {
+          _userModel = userData;
+          _isLoading = false;
+        });
       }
     } catch (e) {
       print('Error loading user data: $e');
@@ -77,11 +75,11 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
   Future<void> _deleteAccount() async {
     try {
-      final user = _auth.currentUser;
+      final user = _authService.currentUser;
       if (user != null) {
-        await _firestore.collection('users').doc(user.uid).delete();
-        await user.delete();
-        await _auth.signOut();
+        await _firestoreService.deleteUserData(user.uid);
+        await _authService.deleteAccount();
+        await _authService.signOut();
         Navigator.pushReplacementNamed(context, '/login');
       }
     } catch (e) {
@@ -206,9 +204,11 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                     ),
                     const SizedBox(height: 8),
                     Container(
-                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                       decoration: BoxDecoration(
-                        color: _getGradeColor(_userModel?.grade ?? 'Bronze').withOpacity(0.1),
+                        color: _getGradeColor(_userModel?.grade ?? 'Bronze')
+                            .withOpacity(0.1),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
                           color: _getGradeColor(_userModel?.grade ?? 'Bronze'),
@@ -221,13 +221,15 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                           Icon(
                             Icons.stars,
                             size: 16,
-                            color: _getGradeColor(_userModel?.grade ?? 'Bronze'),
+                            color:
+                                _getGradeColor(_userModel?.grade ?? 'Bronze'),
                           ),
                           const SizedBox(width: 4),
                           Text(
                             _userModel?.grade ?? 'Bronze',
                             style: GoogleFonts.notoSans(
-                              color: _getGradeColor(_userModel?.grade ?? 'Bronze'),
+                              color:
+                                  _getGradeColor(_userModel?.grade ?? 'Bronze'),
                               fontWeight: FontWeight.w600,
                               fontSize: 14,
                             ),
@@ -280,7 +282,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             _buildInfoItem('Email', _userModel?.email ?? '', Icons.email),
             _buildInfoItem('Tuổi', '${_userModel?.age ?? ''} tuổi', Icons.cake),
             _buildInfoItem('Giới tính', _userModel?.gender ?? '', Icons.person),
-            _buildInfoItem('Khu vực', _userModel?.region ?? '', Icons.location_on),
+            _buildInfoItem(
+                'Khu vực', _userModel?.region ?? '', Icons.location_on),
           ]),
           Divider(height: 1, color: Colors.grey[200]),
           _buildInfoSection('Thông tin về da', [
@@ -366,7 +369,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           _buildActionButton(
             'Chỉnh sửa thông tin',
             Icons.edit,
-                () => Navigator.push(
+            () => Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (context) => EditProfileScreen(userModel: _userModel!),
@@ -394,33 +397,33 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   }
 
   Widget _buildActionButton(
-      String label,
-      IconData icon,
-      VoidCallback onPressed, {
-        Color color = const Color(0xFFfa6386),
-        bool isOutlined = false,
-      }) {
+    String label,
+    IconData icon,
+    VoidCallback onPressed, {
+    Color color = const Color(0xFFfa6386),
+    bool isOutlined = false,
+  }) {
     return Container(
       width: double.infinity,
       height: 56,
       decoration: BoxDecoration(
         gradient: !isOutlined
             ? LinearGradient(
-          colors: [color, color.withOpacity(0.8)],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        )
+                colors: [color, color.withOpacity(0.8)],
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+              )
             : null,
         borderRadius: BorderRadius.circular(16),
         border: isOutlined ? Border.all(color: color) : null,
         boxShadow: !isOutlined
             ? [
-          BoxShadow(
-            color: color.withOpacity(0.3),
-            blurRadius: 12,
-            offset: Offset(0, 6),
-          ),
-        ]
+                BoxShadow(
+                  color: color.withOpacity(0.3),
+                  blurRadius: 12,
+                  offset: Offset(0, 6),
+                ),
+              ]
             : null,
       ),
       child: Material(
@@ -456,7 +459,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
   Future<void> _changePassword() async {
     try {
-      await _auth.sendPasswordResetEmail(email: _userModel?.email ?? '');
+      await _authService.sendPasswordResetEmail(_userModel?.email ?? '');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(

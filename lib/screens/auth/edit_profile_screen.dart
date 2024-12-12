@@ -1,10 +1,10 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 
 import '../../models/user_model.dart';
+import '../../services/auth_service.dart';
+import '../../services/firestore_service.dart';
 import '../../utils/profile_util.dart';
 
 class EditProfileScreen extends StatefulWidget {
@@ -32,7 +32,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final regionOptions = ProfileUtils.regionOptions;
   final skinTypeOptions = ProfileUtils.skinTypeOptions;
   final skinConditionsOptions = ProfileUtils.skinConditionsOptions;
-  final iconOptions = ProfileUtils.iconOptions;  // 아이콘 옵션 사용
+  final iconOptions = ProfileUtils.iconOptions; // 아이콘 옵션 사용
 
   @override
   void initState() {
@@ -48,16 +48,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _selectedIcon = widget.userModel.icon;
   }
 
+  final _authService = AuthService();
+  final _firestoreService = FirestoreService();
+
   Future<void> _saveChanges() async {
     setState(() => _isLoading = true);
 
     try {
-      final user = FirebaseAuth.instance.currentUser;
+      final user = _authService.currentUser;
       if (user != null) {
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .update({
+        // 업데이트할 데이터 준비
+        final updateData = {
           'username': _usernameController.text.trim(),
           'age': int.parse(_ageController.text.trim()),
           'gender': _selectedGender,
@@ -65,7 +66,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           'skinType': _selectedSkinType,
           'skinConditions': _selectedSkinConditions,
           'icon': _selectedIcon,
-        });
+        };
+
+        // FirestoreService를 통해 업데이트
+        await _firestoreService.updateUser(user.uid, updateData);
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -284,12 +288,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             value: _selectedGender,
             decoration: const InputDecoration(
               border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              contentPadding:
+                  EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             ),
-            items: genderOptions.map((gender) => DropdownMenuItem(
-              value: gender['key'],
-              child: Text(gender['label']!, style: GoogleFonts.notoSans()),
-            )).toList(),
+            items: genderOptions
+                .map((gender) => DropdownMenuItem(
+                      value: gender['key'],
+                      child:
+                          Text(gender['label']!, style: GoogleFonts.notoSans()),
+                    ))
+                .toList(),
             onChanged: (value) {
               if (value != null) {
                 setState(() {
@@ -319,12 +327,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             value: _selectedRegion,
             decoration: const InputDecoration(
               border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              contentPadding:
+                  EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             ),
-            items: regionOptions.map((region) => DropdownMenuItem(
-              value: region['key'],
-              child: Text(region['label']!, style: GoogleFonts.notoSans()),
-            )).toList(),
+            items: regionOptions
+                .map((region) => DropdownMenuItem(
+                      value: region['key'],
+                      child:
+                          Text(region['label']!, style: GoogleFonts.notoSans()),
+                    ))
+                .toList(),
             onChanged: (value) {
               if (value != null) {
                 setState(() {
@@ -361,12 +373,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             value: _selectedSkinType,
             decoration: const InputDecoration(
               border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              contentPadding:
+                  EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             ),
-            items: skinTypeOptions.map((type) => DropdownMenuItem(
-              value: type['key'],
-              child: Text(type['label']!, style: GoogleFonts.notoSans()),
-            )).toList(),
+            items: skinTypeOptions
+                .map((type) => DropdownMenuItem(
+                      value: type['key'],
+                      child:
+                          Text(type['label']!, style: GoogleFonts.notoSans()),
+                    ))
+                .toList(),
             onChanged: (value) {
               setState(() {
                 _selectedSkinType = value!;
@@ -392,16 +408,19 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           ),
           child: MultiSelectDialogField(
             initialValue: _selectedSkinConditions,
-            items: skinConditionsOptions.map((condition) => MultiSelectItem<String>(
-              condition['key']!,
-              condition['label']!,
-            )).toList(),
+            items: skinConditionsOptions
+                .map((condition) => MultiSelectItem<String>(
+                      condition['key']!,
+                      condition['label']!,
+                    ))
+                .toList(),
             title: Text('Chọn tình trạng da'),
             selectedColor: Color(0xFFfa6386),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
             ),
-            buttonIcon: Icon(Icons.add_circle_outline, color: Color(0xFFfa6386)),
+            buttonIcon:
+                Icon(Icons.add_circle_outline, color: Color(0xFFfa6386)),
             buttonText: Text(
               _selectedSkinConditions.isEmpty
                   ? 'Vui lòng chọn tình trạng da'

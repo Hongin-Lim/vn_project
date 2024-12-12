@@ -5,7 +5,7 @@ import 'package:vn_project/screens/auth/login_screen.dart';
 import 'package:vn_project/screens/auth/signup_screen.dart';
 
 import 'firebase_options.dart'; // Firebase 설정 파일
-import 'screens/home_screen.dart'; // 홈 화면
+import 'screens/home/home_screen.dart'; // 홈 화면
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // 비동기 작업 초기화

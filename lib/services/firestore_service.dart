@@ -41,7 +41,7 @@ class FirestoreService {
     } catch (e) {
       throw Exception('Không thể tải thông tin người dùng: $e');
     }
-}
+  }
 
   // 마지막 로그인 시간 업데이트
   Future<void> updateLastLogin(String userId) async {
@@ -63,12 +63,29 @@ class FirestoreService {
     }
   }
 
+  /// 사용자의 권한(role) 조회
+  Future<String> getUserRole(String uid) async {
+    try {
+      final docSnapshot = await _firestore.collection('users').doc(uid).get();
+      if (docSnapshot.exists && docSnapshot.data()!.containsKey('role')) {
+        return docSnapshot.data()!['role'] as String;
+      }
+      return ''; // 기본값 반환
+    } catch (e) {
+      print('Error getting user role: $e');
+      return ''; // 에러 발생시 빈 문자열 반환
+    }
+  }
+
+
   /// Firebase Storage에 사진 업로드 후 URL 반환
   Future<String> uploadPhoto(String userId, String filePath) async {
     try {
       final ref = _storage
           .ref()
-          .child('reviewPhotos/$userId/${DateTime.now().millisecondsSinceEpoch}');
+          .child('reviewPhotos/$userId/${DateTime
+          .now()
+          .millisecondsSinceEpoch}');
       final uploadTask = ref.putFile(File(filePath));
       final snapshot = await uploadTask;
       return await snapshot.ref.getDownloadURL();
@@ -85,7 +102,8 @@ class FirestoreService {
       }
       final QuerySnapshot<Map<String, dynamic>> snapshot = await query.get();
 
-      return snapshot.docs.map((QueryDocumentSnapshot<Map<String, dynamic>> doc) {
+      return snapshot.docs.map((
+          QueryDocumentSnapshot<Map<String, dynamic>> doc) {
         return Product.fromFirestore(doc);
       }).toList();
     } catch (e) {
@@ -121,7 +139,8 @@ class FirestoreService {
   }
 
   /// 리뷰 추가
-  Future<void> addReview(String productId, Review review, List<String> photoPaths) async {
+  Future<void> addReview(String productId, Review review,
+      List<String> photoPaths) async {
     try {
       final photoUrls = await Future.wait(
         photoPaths.map((path) => uploadPhoto(review.userId, path)),
@@ -145,7 +164,8 @@ class FirestoreService {
         final currentAverageRating = productData['averageRating'] ?? 0.0;
 
         final newReviewCount = currentReviewCount + 1;
-        final newAverageRating = ((currentAverageRating * currentReviewCount) + review.rating) / newReviewCount;
+        final newAverageRating = ((currentAverageRating * currentReviewCount) +
+            review.rating) / newReviewCount;
 
         await productRef.update({
           'reviewCount': newReviewCount,
@@ -158,7 +178,8 @@ class FirestoreService {
   }
 
   /// 리뷰 수정
-  Future<void> updateReview(String reviewId, String productId, Review updatedReview, List<String> newPhotoPaths) async {
+  Future<void> updateReview(String reviewId, String productId,
+      Review updatedReview, List<String> newPhotoPaths) async {
     try {
       final photoUrls = await Future.wait(
         newPhotoPaths.map((path) => uploadPhoto(updatedReview.userId, path)),
@@ -180,7 +201,8 @@ class FirestoreService {
         final currentReviewCount = productData['reviewCount'] ?? 0;
         final currentAverageRating = productData['averageRating'] ?? 0.0;
 
-        final newAverageRating = ((currentAverageRating * currentReviewCount) + updatedReview.rating) / currentReviewCount;
+        final newAverageRating = ((currentAverageRating * currentReviewCount) +
+            updatedReview.rating) / currentReviewCount;
 
         await productRef.update({'averageRating': newAverageRating});
       }
@@ -192,7 +214,8 @@ class FirestoreService {
   /// 제품 수정
   Future<void> updateProduct(String productId, Product updatedProduct) async {
     try {
-      await _firestore.collection('products').doc(productId).update(updatedProduct.toFirestore());
+      await _firestore.collection('products').doc(productId).update(
+          updatedProduct.toFirestore());
     } catch (e) {
       throw Exception('제품 수정 실패: $e');
     }
@@ -225,3 +248,30 @@ class FirestoreService {
     }
   }
 }
+
+
+// 사용안함
+// /// 홈화면 관련
+// // 홈 최근 리뷰 스트림
+// Stream<QuerySnapshot> getRecentReviews(int limit) {
+//   return _firestore
+//       .collection('reviews')
+//       .orderBy('createdAt', descending: true)
+//       .limit(limit)
+//       .snapshots();
+// }
+//
+// // 홈 제품 정보 가져오기
+// Future<DocumentSnapshot?> getProduct(String productId) async {
+//   try {
+//     return await _firestore.collection('products').doc(productId).get();
+//   } catch (e) {
+//     throw Exception('Không thể tải thông tin sản phẩm: $e');
+//   }
+// }
+//
+// // 홈 사용자 정보 스트림
+// Stream<DocumentSnapshot> getUserStream(String userId) {
+//   return _firestore.collection('users').doc(userId).snapshots();
+// }
+// }
