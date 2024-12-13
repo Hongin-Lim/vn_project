@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../review/add_review_screen.dart';
-import '../ingredient_analysis_screen.dart';
+import '../product_analysis_screen.dart';
 
 /// 상품 상세 화면의 액션 버튼들(성분 분석, 리뷰 작성)을 표시하는 위젯
 class ProductActionButtons extends StatelessWidget {

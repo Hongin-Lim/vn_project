@@ -343,6 +343,17 @@ class FirestoreService {
   }
 
   /// 상품 정보 수정: product_detail_screen.dart에서 사용
+  // updateProduct 방식 - 위험!
+  // await _firestoreService.updateProduct(productId, {
+  //   'nmae': '새이름',  // 오타 있어도 컴파일러가 못 잡음
+  //   'desc': '새설명'   // 잘못된 필드명이어도 못 잡음
+  // });
+  //
+  // // copyWith 방식 - 안전!
+  // final updatedProduct = oldProduct.copyWith(
+  //   nmae: '새이름',    // 컴파일 에러! (오타 감지)
+  //   desc: '새설명'     // 컴파일 에러! (잘못된 필드명 감지)
+  // );
   Future<void> updateProduct(String productId, Map<String, dynamic> data) async {
     try {
       await _firestore.collection('products').doc(productId).update(data);

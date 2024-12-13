@@ -52,6 +52,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
         description: _descriptionController.text,
         category: _selectedCategory!,
         imageUrl: _imageUrlController.text,
+        createdAt: DateTime.now(),
         reviewCount: 0,
         averageRating: 0.0,
       );
