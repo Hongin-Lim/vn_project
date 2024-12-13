@@ -1,14 +1,11 @@
-import 'dart:typed_data' show Uint8List;
-
-import 'package:cloud_firestore/cloud_firestore.dart';
+// 이것도 일단 안씀
 import 'package:file_picker/file_picker.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../models/product_model.dart';
 import '../../models/review.model.dart';
+import '../../services/auth_service.dart';
+import '../../services/firestore_service.dart';
 
 class AddReviewScreen extends StatefulWidget {
   final String productId;
@@ -27,11 +24,13 @@ class AddReviewScreen extends StatefulWidget {
 }
 
 class _AddReviewScreenState extends State<AddReviewScreen> {
-  final TextEditingController _titleController = TextEditingController();
-  final TextEditingController _contentController = TextEditingController();
+  final _firestoreService = FirestoreService();
+  final _authService = AuthService();
+
+  final _titleController = TextEditingController();
+  final _contentController = TextEditingController();
   double _rating = 1.0;
 
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   List<Map<String, dynamic>> _selectedImages = [];
   bool _isUploading = false;
   double _uploadProgress = 0.0;
@@ -81,32 +80,14 @@ class _AddReviewScreenState extends State<AddReviewScreen> {
   }
 
   Future<void> _submitReview() async {
-    final currentUser = FirebaseAuth.instance.currentUser;
+    final currentUser = _authService.currentUser;
     if (currentUser == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Vui lòng đăng nhập để viết đánh giá',
-            style: GoogleFonts.notoSans(),
-          ),
-          backgroundColor: Colors.red,
-        ),
-      );
+      _showErrorMessage('Vui lòng đăng nhập để viết đánh giá');
       return;
     }
 
-    if (_titleController.text.isEmpty ||
-        _contentController.text.isEmpty ||
-        _rating < 1.0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Vui lòng điền vào tất cả các trường',
-            style: GoogleFonts.notoSans(),
-          ),
-          backgroundColor: Colors.red,
-        ),
-      );
+    if (_titleController.text.isEmpty || _contentController.text.isEmpty) {
+      _showErrorMessage('Vui lòng điền vào tất cả các trường');
       return;
     }
 
@@ -116,47 +97,6 @@ class _AddReviewScreenState extends State<AddReviewScreen> {
     });
 
     try {
-      List<String> uploadedPhotoUrls = [];
-
-      if (_selectedImages.isNotEmpty) {
-        for (var imageData in _selectedImages) {
-          if (imageData['bytes'] != null) {
-            try {
-              final Uint8List bytes = Uint8List.fromList(imageData['bytes']);
-              String fileName =
-                  '${DateTime.now().millisecondsSinceEpoch}_${imageData['name']}';
-
-              final storageRef = FirebaseStorage.instance.ref();
-              final imageRef = storageRef.child('review_images/$fileName');
-
-              final uploadTask = imageRef.putData(
-                bytes,
-                SettableMetadata(contentType: 'image/jpeg'),
-              );
-
-              uploadTask.snapshotEvents.listen(
-                (TaskSnapshot snapshot) {
-                  setState(() {
-                    _uploadProgress =
-                        (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                  });
-                },
-                onError: (e) {
-                  print('Upload error: $e');
-                },
-              );
-
-              final snapshot = await uploadTask;
-              final downloadUrl = await snapshot.ref.getDownloadURL();
-              uploadedPhotoUrls.add(downloadUrl);
-            } catch (uploadError) {
-              print('Error uploading image: $uploadError');
-              throw Exception('Tải lên hình ảnh thất bại: $uploadError');
-            }
-          }
-        }
-      }
-
       // Review 모델 생성
       final review = Review(
         productId: widget.productId,
@@ -164,87 +104,54 @@ class _AddReviewScreenState extends State<AddReviewScreen> {
         title: _titleController.text,
         content: _contentController.text,
         rating: _rating.toInt(),
-        photoUrls: uploadedPhotoUrls,
+        photoUrls: [], // 빈 배열로 시작
         createdAt: DateTime.now(),
       );
 
-      // Firestore에 리뷰 저장
-      final reviewRef =
-          await _firestore.collection('reviews').add(review.toFirestore());
+      // 이미지 데이터 변환 (Uint8List를 String 경로로 변환하는 로직 필요)
+      final photoPaths = _selectedImages.map((img) => img['name'] as String).toList();
 
-      // Product 문서 업데이트 (리뷰 수와 평균 평점)
-      final productRef =
-          _firestore.collection('products').doc(widget.productId);
-      await _firestore.runTransaction((transaction) async {
-        final productDoc = await transaction.get(productRef);
-        if (!productDoc.exists) {
-          throw Exception('Product not found');
-        }
-
-        final product = Product.fromFirestore(productDoc);
-        final newReviewCount = product.reviewCount + 1;
-        final newAverageRating =
-            ((product.averageRating * product.reviewCount) + _rating) /
-                newReviewCount;
-
-        transaction.update(productRef, {
-          'reviewCount': newReviewCount,
-          'averageRating': newAverageRating,
-        });
-      });
-
-      // User 문서 업데이트
-      final userRef = _firestore.collection('users').doc(currentUser.uid);
-      try {
-        // 문서가 존재하는지 먼저 확인
-        final userDoc = await userRef.get();
-        if (!userDoc.exists) {
-          // 문서가 없으면 새로 생성
-          await userRef.set({
-            'likedReviews': [reviewRef.id],
-            'uid': currentUser.uid,
-            // 필요한 다른 사용자 정보도 추가
-            'email': currentUser.email,
-            'createdAt': FieldValue.serverTimestamp(),
-          });
-        } else {
-          // 문서가 있으면 업데이트
-          await userRef.update({
-            'likedReviews': FieldValue.arrayUnion([reviewRef.id]),
-          });
-        }
-      } catch (e) {
-        print('Error updating user document: $e');
-        // 에러 처리
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Đánh giá đã được gửi thành công',
-            style: GoogleFonts.notoSans(),
-          ),
-          backgroundColor: Colors.green,
-        ),
+      // FirestoreService 호출 (파라미터 순서 맞춤)
+      await _firestoreService.addReview(
+          widget.productId,  // productId 먼저
+          review,           // review 객체
+          photoPaths        // 이미지 경로 리스트
       );
+
+      _showSuccessMessage('Đánh giá đã được gửi thành công');
       Navigator.pop(context);
     } catch (e) {
-      print('Error in _submitReview: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Đã xảy ra lỗi khi gửi đánh giá: $e',
-            style: GoogleFonts.notoSans(),
-          ),
-          backgroundColor: Colors.red,
-        ),
-      );
+      _showErrorMessage('Đã xảy ra lỗi khi gửi đánh giá: $e');
     } finally {
       setState(() {
         _isUploading = false;
         _uploadProgress = 0.0;
       });
     }
+  }
+
+  void _showSuccessMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: GoogleFonts.notoSans(),
+        ),
+        backgroundColor: Colors.green,
+      ),
+    );
+  }
+
+  void _showErrorMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: GoogleFonts.notoSans(),
+        ),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
 
   Widget _buildImagePreview() {

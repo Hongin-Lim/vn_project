@@ -31,7 +31,8 @@ class FirestoreService {
   }
 
   // 사용자 데이터 로드
-  Future<UserModel?> loadUserData(String userId) async {
+  // Future<Map<String, dynamic>?> getUserData(String userId)  // Raw 데이터 반환
+  Future<UserModel?> loadUserData(String userId) async { // UserModel 객체 반환
     try {
       final doc = await _firestore.collection('users').doc(userId).get();
       if (doc.exists) {
@@ -94,123 +95,173 @@ class FirestoreService {
     }
   }
 
-  // Future<List<Product>> fetchProducts({String? category}) async {
-  //   try {
-  //     Query<Map<String, dynamic>> query = _firestore.collection('products');
-  //     if (category != null && category != 'Tất cả') {
-  //       query = query.where('category', isEqualTo: category);
-  //     }
-  //     final QuerySnapshot<Map<String, dynamic>> snapshot = await query.get();
-  //
-  //     return snapshot.docs.map((
-  //         QueryDocumentSnapshot<Map<String, dynamic>> doc) {
-  //       return Product.fromFirestore(doc);
-  //     }).toList();
-  //   } catch (e) {
-  //     throw Exception('제품 목록 가져오기 실패: $e');
-  //   }
-  // }
-
-  // /// 특정 제품 가져오기
-  // Future<Product?> fetchProductById(String productId) async {
-  //   try {
-  //     final doc = await _firestore.collection('products').doc(productId).get();
-  //     if (doc.exists) {
-  //       return Product.fromFirestore(doc);
-  //     }
-  //     return null;
-  //   } catch (e) {
-  //     throw Exception('제품 정보 가져오기 실패: $e');
-  //   }
-  // }
-
-  /// 리뷰 가져오기 (특정 제품에 대한)
-  Future<List<Review>> fetchReviews(String productId) async {
-    try {
-      final snapshot = await _firestore
-          .collection('reviews')
-          .where('productId', isEqualTo: productId)
-          .orderBy('createdAt', descending: true)
-          .get();
-      return snapshot.docs.map((doc) => Review.fromFirestore(doc)).toList();
-    } catch (e) {
-      throw Exception('리뷰 목록 가져오기 실패: $e');
-    }
-  }
-
   /// 리뷰 추가
-  Future<void> addReview(String productId, Review review,
-      List<String> photoPaths) async {
+  Future<void> addReview(String productId, Review review, List<String> photoPaths) async {
     try {
+      // 1. 사진 업로드
       final photoUrls = await Future.wait(
         photoPaths.map((path) => uploadPhoto(review.userId, path)),
       );
 
-      await _firestore.collection('reviews').add({
-        'productId': productId,
-        'userId': review.userId,
-        'content': review.content,
-        'rating': review.rating,
-        'photoUrls': photoUrls,
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-
-      final productRef = _firestore.collection('products').doc(productId);
-      final productSnapshot = await productRef.get();
-
-      if (productSnapshot.exists) {
-        final productData = productSnapshot.data()!;
-        final currentReviewCount = productData['reviewCount'] ?? 0;
-        final currentAverageRating = productData['averageRating'] ?? 0.0;
-
-        final newReviewCount = currentReviewCount + 1;
-        final newAverageRating = ((currentAverageRating * currentReviewCount) +
-            review.rating) / newReviewCount;
-
-        await productRef.update({
-          'reviewCount': newReviewCount,
-          'averageRating': newAverageRating,
+      // 2. 리뷰 저장 및 제품 통계 업데이트를 트랜잭션으로 처리
+      await _firestore.runTransaction((transaction) async {
+        // 리뷰 추가
+        final reviewRef = _firestore.collection('reviews').doc();
+        transaction.set(reviewRef, {
+          'productId': productId,
+          'userId': review.userId,
+          'content': review.content,
+          'rating': review.rating,
+          'photoUrls': photoUrls,
+          'createdAt': FieldValue.serverTimestamp(),
         });
-      }
+
+        // 제품 통계 업데이트
+        final productRef = _firestore.collection('products').doc(productId);
+        final productDoc = await transaction.get(productRef);
+
+        if (productDoc.exists) {
+          final currentCount = productDoc.data()?['reviewCount'] ?? 0;
+          final currentAverage = productDoc.data()?['averageRating'] ?? 0.0;
+
+          final newCount = currentCount + 1;
+          final newAverage = ((currentAverage * currentCount) + review.rating) / newCount;
+
+          transaction.update(productRef, {
+            'reviewCount': newCount,
+            'averageRating': newAverage,
+          });
+        }
+      });
     } catch (e) {
       throw Exception('리뷰 추가 실패: $e');
     }
   }
 
-  /// 리뷰 수정
-  Future<void> updateReview(String reviewId, String productId,
-      Review updatedReview, List<String> newPhotoPaths) async {
+  /// 특정 리뷰 조회
+  Future<Review?> getReview(String reviewId) async {
     try {
+      final doc = await _firestore.collection('reviews').doc(reviewId).get();
+      if (doc.exists) {
+        return Review.fromFirestore(doc);
+      }
+      return null;
+    } catch (e) {
+      throw Exception('리뷰 조회 실패: $e');
+    }
+  }
+
+  /// 리뷰 수정 권한 확인
+  Future<bool> canModifyReview(String userId, String reviewId) async {
+    try {
+      final review = await getReview(reviewId);
+      if (review == null) return false;
+
+      // 작성자이거나 관리자인 경우 수정 가능
+      final hasAdminRole = await isAdmin(userId);
+      return review.userId == userId || hasAdminRole;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// 리뷰 수정
+  Future<void> updateReview(String reviewId, Review updatedReview, List<String> newPhotoPaths) async {
+    try {
+      // 기존 리뷰 데이터 가져오기
+      final oldReview = await getReview(reviewId);
+      if (oldReview == null) {
+        throw Exception('리뷰를 찾을 수 없습니다');
+      }
+
+      // 새로운 사진 업로드
       final photoUrls = await Future.wait(
-        newPhotoPaths.map((path) => uploadPhoto(updatedReview.userId, path)),
+          newPhotoPaths.map((path) => uploadPhoto(updatedReview.userId, path))
       );
 
-      final reviewRef = _firestore.collection('reviews').doc(reviewId);
-      await reviewRef.update({
-        'content': updatedReview.content,
-        'rating': updatedReview.rating,
-        'photoUrls': photoUrls,
-        'updatedAt': FieldValue.serverTimestamp(),
+      // 리뷰 데이터 업데이트
+      await _firestore.runTransaction((transaction) async {
+        final reviewRef = _firestore.collection('reviews').doc(reviewId);
+        final productRef = _firestore.collection('products').doc(updatedReview.productId);
+
+        // 제품 통계 업데이트
+        final productDoc = await transaction.get(productRef);
+        if (productDoc.exists) {
+          final currentCount = productDoc.data()?['reviewCount'] ?? 0;
+          final currentAverage = productDoc.data()?['averageRating'] ?? 0.0;
+
+          // 이전 평점 제거 후 새 평점 추가
+          final newAverage = ((currentAverage * currentCount) - oldReview.rating + updatedReview.rating) / currentCount;
+
+          transaction.update(productRef, {
+            'averageRating': newAverage,
+          });
+        }
+
+        // 리뷰 업데이트
+        transaction.update(reviewRef, {
+          ...updatedReview.toFirestore(),
+          'photoUrls': photoUrls,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
       });
-
-      final productRef = _firestore.collection('products').doc(productId);
-      final productSnapshot = await productRef.get();
-
-      if (productSnapshot.exists) {
-        final productData = productSnapshot.data()!;
-        final currentReviewCount = productData['reviewCount'] ?? 0;
-        final currentAverageRating = productData['averageRating'] ?? 0.0;
-
-        final newAverageRating = ((currentAverageRating * currentReviewCount) +
-            updatedReview.rating) / currentReviewCount;
-
-        await productRef.update({'averageRating': newAverageRating});
-      }
     } catch (e) {
       throw Exception('리뷰 수정 실패: $e');
     }
   }
 
+  /// 리뷰 삭제
+  Future<void> deleteReview(String reviewId) async {
+    try {
+      // 리뷰 데이터 가져오기
+      final review = await getReview(reviewId);
+      if (review == null) {
+        throw Exception('리뷰를 찾을 수 없습니다');
+      }
+
+      await _firestore.runTransaction((transaction) async {
+        final reviewRef = _firestore.collection('reviews').doc(reviewId);
+        final productRef = _firestore.collection('products').doc(review.productId);
+
+        // 제품 통계 업데이트
+        final productDoc = await transaction.get(productRef);
+        if (productDoc.exists) {
+          final currentCount = productDoc.data()?['reviewCount'] ?? 0;
+          final currentAverage = productDoc.data()?['averageRating'] ?? 0.0;
+
+          if (currentCount > 1) {
+            final newCount = currentCount - 1;
+            final newAverage = ((currentAverage * currentCount) - review.rating) / newCount;
+
+            transaction.update(productRef, {
+              'reviewCount': newCount,
+              'averageRating': newAverage,
+            });
+          } else {
+            // 마지막 리뷰인 경우
+            transaction.update(productRef, {
+              'reviewCount': 0,
+              'averageRating': 0,
+            });
+          }
+        }
+
+        // 리뷰 삭제
+        transaction.delete(reviewRef);
+      });
+
+      // 리뷰 사진 삭제 (옵션)
+      for (String photoUrl in review.photoUrls) {
+        try {
+          await _storage.refFromURL(photoUrl).delete();
+        } catch (e) {
+          print('사진 삭제 실패: $e');
+        }
+      }
+    } catch (e) {
+      throw Exception('리뷰 삭제 실패: $e');
+    }
+  }
 
 
   /// [product]: 추가할 상품 정보
@@ -309,13 +360,5 @@ class FirestoreService {
     }
   }
 
-  /// 리뷰 삭제
-  Future<void> deleteReview(String reviewId) async {
-    try {
-      await _firestore.collection('reviews').doc(reviewId).delete();
-    } catch (e) {
-      throw Exception('리뷰 삭제 실패: $e');
-    }
-  }
 }
 

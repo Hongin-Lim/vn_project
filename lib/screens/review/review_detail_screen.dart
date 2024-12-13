@@ -1,10 +1,16 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+// lib/screens/review/review_detail_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../utils/grade_utils.dart';
+import '../../models/review.model.dart';
+import '../../services/auth_service.dart';
+import '../../services/firestore_service.dart';
+import 'edit_review_screen.dart';
+import 'widgets/review_photos.dart';
+import 'widgets/user_info_card.dart';
 
-class ReviewDetailScreen extends StatelessWidget {
+class ReviewDetailScreen extends StatefulWidget {
   final String reviewId;
 
   const ReviewDetailScreen({
@@ -13,307 +19,229 @@ class ReviewDetailScreen extends StatelessWidget {
   }) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    final FirebaseFirestore firestore = FirebaseFirestore.instance;
+  _ReviewDetailScreenState createState() => _ReviewDetailScreenState();
+}
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: Text(
-          'Chi tiết đánh giá',
-          style: GoogleFonts.notoSans(
-            color: Colors.black87,
-            fontWeight: FontWeight.w600,
-          ),
+class _ReviewDetailScreenState extends State<ReviewDetailScreen> {
+  final _firestoreService = FirestoreService();
+  final _authService = AuthService();
+  bool _canModifyReview = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkModifyPermission();
+  }
+
+  Future<void> _checkModifyPermission() async {
+    final currentUser = _authService.currentUser;
+    if (currentUser != null) {
+      final hasPermission = await _firestoreService.canModifyReview(
+        currentUser.uid,
+        widget.reviewId,
+      );
+      setState(() => _canModifyReview = hasPermission);
+    }
+  }
+
+  Future<void> _handleDelete() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('리뷰 삭제', style: GoogleFonts.notoSans()),
+        content: Text(
+          '이 리뷰를 삭제하시겠습니까?\n삭제된 리뷰는 복구할 수 없습니다.',
+          style: GoogleFonts.notoSans(),
         ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black87),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('취소', style: GoogleFonts.notoSans()),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: Text('삭제', style: GoogleFonts.notoSans()),
+          ),
+        ],
       ),
-      body: FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-        future: firestore.collection('reviews').doc(reviewId).get(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.indigo),
-              ),
-            );
-          }
+    );
 
-          if (!snapshot.hasData || !snapshot.data!.exists) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.error_outline, size: 48, color: Colors.grey[400]),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Không tìm thấy bài đánh giá',
-                    style: GoogleFonts.notoSans(
-                      fontSize: 16,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
+    if (confirm == true) {
+      try {
+        await _firestoreService.deleteReview(widget.reviewId);
+        Navigator.pop(context);
+      } catch (e) {
+        _showErrorMessage(e.toString());
+      }
+    }
+  }
 
-          final review = snapshot.data!.data()!;
-
-          return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-            future: firestore.collection('users').doc(review['userId']).get(),
-            builder: (context, userSnapshot) {
-              if (!userSnapshot.hasData) {
-                return _buildReviewDetail(context, review, null);
-              }
-              final userData = userSnapshot.data!.data();
-              return _buildReviewDetail(context, review, userData);
-            },
-          );
-        },
+  void _showErrorMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: GoogleFonts.notoSans()),
+        backgroundColor: Colors.red,
       ),
     );
   }
 
-  Widget _buildReviewDetail(BuildContext context, Map<String, dynamic> review, Map<String, dynamic>? userData) {
-    final createdAt = review['createdAt'] != null
-        ? (review['createdAt'] as Timestamp).toDate()
-        : null;
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.grey[50],
+      appBar: _buildAppBar(),
+      body: _buildBody(),
+    );
+  }
 
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (review['photoUrls'] != null && review['photoUrls'].isNotEmpty)
-            Stack(
-              children: [
-                Container(
-                  height: 400,
-                  width: double.infinity,
-                  child: PageView.builder(
-                    itemCount: (review['photoUrls'] as List).length,
-                    itemBuilder: (context, index) {
-                      return Container(
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey[100]!),
-                        ),
-                        child: Image.network(
-                          review['photoUrls'][index],
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              color: Colors.grey[100],
-                              child: Icon(
-                                Icons.image_not_supported,
-                                color: Colors.grey[400],
-                                size: 48,
-                              ),
-                            );
-                          },
-                        ),
-                      );
-                    },
-                  ),
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      elevation: 0,
+      backgroundColor: Colors.white,
+      title: Text(
+        'Chi tiết đánh giá',
+        style: GoogleFonts.notoSans(
+          color: Colors.black87,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      actions: _canModifyReview ? [
+        PopupMenuButton<String>(
+          onSelected: (value) async {
+            if (value == 'edit') {
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => EditReviewScreen(reviewId: widget.reviewId),
                 ),
-                Positioned(
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  child: Container(
-                    height: 100,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          Colors.black.withOpacity(0.5),
-                        ],
-                      ),
-                    ),
-                  ),
+              );
+              if (result == true) {
+                setState(() {});  // 리뷰가 수정되면 화면 새로고침
+              }
+            } else if (value == 'delete') {
+              await _handleDelete();
+            }
+          },
+          itemBuilder: (context) => [
+            PopupMenuItem(
+              value: 'edit',
+              child: Row(
+                children: [
+                  const Icon(Icons.edit, size: 20, color: Colors.black87),
+                  const SizedBox(width: 8),
+                  Text('수정', style: GoogleFonts.notoSans()),
+                ],
+              ),
+            ),
+            PopupMenuItem(
+              value: 'delete',
+              child: Row(
+                children: [
+                  const Icon(Icons.delete, size: 20, color: Colors.red),
+                  const SizedBox(width: 8),
+                  Text('삭제', style: GoogleFonts.notoSans(color: Colors.red)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ] : null,
+    );
+  }
+
+  Widget _buildBody() {
+    return FutureBuilder<Review?>(
+      future: _firestoreService.getReview(widget.reviewId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.error_outline, size: 48, color: Colors.grey[400]),
+                const SizedBox(height: 16),
+                Text(
+                  '리뷰를 불러오는데 실패했습니다',
+                  style: GoogleFonts.notoSans(color: Colors.grey[600]),
                 ),
               ],
             ),
+          );
+        }
 
-          Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.08),
-                        blurRadius: 20,
-                        spreadRadius: 0,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          Stack(
-                            children: [
-                              CircleAvatar(
-                                radius: 28,
-                                backgroundColor: Colors.indigo.withOpacity(0.1),
-                                backgroundImage: (userData != null &&
-                                    userData['profileImageUrl'] != null &&
-                                    userData['profileImageUrl'].toString().isNotEmpty)
-                                    ? NetworkImage(userData['profileImageUrl'])
-                                    : null,
-                                child: (userData == null ||
-                                    userData['profileImageUrl'] == null ||
-                                    userData['profileImageUrl'].toString().isEmpty)
-                                    ? (userData?['icon'] != null)
-                                    ? Text(
-                                  userData!['icon'],
-                                  style: const TextStyle(fontSize: 32),
-                                )
-                                    : Icon(
-                                  Icons.person_outline_rounded,
-                                  size: 32,
-                                  color: Colors.indigo[400],
-                                )
-                                    : null,
-                              ),
-                              Positioned(
-                                bottom: 0,
-                                right: 0,
-                                child: Container(
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Text(
-                                    getGradeIcon(userData?['grade']),
-                                    style: const TextStyle(fontSize: 14),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  userData?['username'] ?? 'Người dùng ẩn danh',
-                                  style: GoogleFonts.notoSans(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.black87,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Wrap(
-                                  spacing: 8,
-                                  runSpacing: 8,
-                                  children: [
-                                    _buildInfoChip(
-                                      label: userData?['skinType'] ?? 'Không xác định',
-                                      color: Colors.indigo,
-                                    ),
-                                    ...?userData?['skinConditions']?.map<Widget>((condition) =>
-                                        _buildInfoChip(
-                                          label: condition,
-                                          color: Colors.teal,
-                                        ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+        final review = snapshot.data;
+        if (review == null) {
+          return Center(
+            child: Text(
+              '리뷰를 찾을 수 없습니다',
+              style: GoogleFonts.notoSans(color: Colors.grey[600]),
+            ),
+          );
+        }
+
+        return SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (review.photoUrls.isNotEmpty)
+                ReviewPhotos(photoUrls: review.photoUrls),
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    UserInfoCard(userId: review.userId),
+                    const SizedBox(height: 24),
+                    _buildRatingBar(review.rating, review.createdAt),
+                    const SizedBox(height: 24),
+                    _buildReviewContent(review),
+                  ],
                 ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
-                const SizedBox(height: 24),
-
-                Container(
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[50],
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: List.generate(5, (index) {
-                          return Icon(
-                            index < (review['rating'] ?? 0)
-                                ? Icons.star_rounded
-                                : Icons.star_outline_rounded,
-                            color: Colors.amber[400],
-                            size: 28,
-                          );
-                        }),
-                      ),
-                      if (createdAt != null)
-                        Text(
-                          createdAt.toLocal().toString().split(' ')[0],
-                          style: GoogleFonts.notoSans(
-                            color: Colors.grey[600],
-                            fontSize: 14,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 24),
-
-                Text(
-                  review['title'] ?? 'Không có tiêu đề',
-                  style: GoogleFonts.notoSans(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    height: 1.3,
-                    color: Colors.black87,
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.08),
-                        blurRadius: 20,
-                        spreadRadius: 0,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Text(
-                    review['content'] ?? 'Không có nội dung',
-                    style: GoogleFonts.notoSans(
-                      fontSize: 16,
-                      height: 1.6,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ),
-              ],
+  Widget _buildRatingBar(int rating, DateTime createdAt) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: List.generate(5, (index) {
+              return Icon(
+                index < rating
+                    ? Icons.star_rounded
+                    : Icons.star_outline_rounded,
+                color: Colors.amber[400],
+                size: 28,
+              );
+            }),
+          ),
+          Text(
+            createdAt.toString().split(' ')[0],
+            style: GoogleFonts.notoSans(
+              color: Colors.grey[600],
+              fontSize: 14,
             ),
           ),
         ],
@@ -321,23 +249,41 @@ class ReviewDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoChip({required String label, required Color color}) {
+  Widget _buildReviewContent(Review review) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 12,
-        vertical: 6,
-      ),
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+          ),
+        ],
       ),
-      child: Text(
-        label,
-        style: GoogleFonts.notoSans(
-          fontSize: 13,
-          color: color,
-          fontWeight: FontWeight.w500,
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            review.title,
+            style: GoogleFonts.notoSans(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              height: 1.3,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            review.content,
+            style: GoogleFonts.notoSans(
+              fontSize: 16,
+              height: 1.6,
+              color: Colors.black87,
+            ),
+          ),
+        ],
       ),
     );
   }
