@@ -146,7 +146,6 @@ class RecentReviewsSection extends StatelessWidget {
     );
   }
 
-// ... (나머지 메서드들은 다음 메시지에서 계속)
   /// 시머 효과 카드
   Widget _buildShimmerCard() {
     return Card(
@@ -310,7 +309,7 @@ class RecentReviewsSection extends StatelessWidget {
     return Row(
       children: [
         CircleAvatar(
-          backgroundColor: Colors.deepPurple[100],
+          backgroundColor: Colors.white,
           radius: isDesktop ? 24 : 20,
           child: (userData == null ||
               userData['profileImageUrl'] == null ||
@@ -319,7 +318,7 @@ class RecentReviewsSection extends StatelessWidget {
             userData?['icon'] ?? '👤',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: isDesktop ? 20 : 16,
+              fontSize: isDesktop ? 20 : 18,
             ),
           )
               : null,
@@ -335,7 +334,8 @@ class RecentReviewsSection extends StatelessWidget {
                   style: GoogleFonts.notoSans(
                     fontWeight: FontWeight.bold,
                     fontSize: isDesktop ? 18 : 16,
-                    color: Colors.deepPurple,
+                    // color: Colors.deepPurple,
+                    color: Colors.pinkAccent[100],
                   ),
                 ),
               if (userData != null)

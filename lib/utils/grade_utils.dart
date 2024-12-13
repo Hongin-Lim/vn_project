@@ -3,6 +3,16 @@ import 'package:flutter/material.dart';
 
 String getGradeIcon(String? grade) {
   switch(grade?.toLowerCase()) {
+    // case 'bronze':
+    //   return '🥉';
+    // case 'silver':
+    //   return '🥈';
+    // case 'gold':
+    //   return '🥇';
+    // case 'platinum':
+    //   return '💎';
+    // default:
+    //   return '🔰';
     case 'bronze':
       return '🥉';
     case 'silver':
@@ -12,8 +22,7 @@ String getGradeIcon(String? grade) {
     case 'platinum':
       return '💎';
     default:
-      return '🥉';
-      // return '🔰';
+      return '🔰';
   }
 }
 

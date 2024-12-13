@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:vn_project/screens/review/widgets/product_info_card.dart';
 
 import '../../models/review.model.dart';
 import '../../services/auth_service.dart';
@@ -195,6 +196,8 @@ class _ReviewDetailScreenState extends State<ReviewDetailScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    ProductInfoCard(productId: review.productId), // 추가
+                    const SizedBox(height: 24),
                     UserInfoCard(userId: review.userId),
                     const SizedBox(height: 24),
                     _buildRatingBar(review.rating, review.createdAt),

@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart'; // Firebase 초기화 패키�
 import 'package:flutter/material.dart';
 import 'package:vn_project/screens/auth/login_screen.dart';
 import 'package:vn_project/screens/auth/signup_screen.dart';
+import 'package:vn_project/screens/product/product_detail_screen.dart';
 
 import 'firebase_options.dart'; // Firebase 설정 파일
 import 'screens/home/home_screen.dart'; // 홈 화면
@@ -32,12 +33,22 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      // home: HomeScreen(),
-      initialRoute: '/home', // 앱 시작 경로 (회원가입 화면)
+      initialRoute: '/home',
       routes: {
         '/signup': (context) => SignupScreen(),
         '/login': (context) => LoginScreen(),
         '/home': (context) => HomeScreen(),
+      },
+      onGenerateRoute: (settings) {
+        // '/product/detail' 라우트 처리
+        if (settings.name == '/product/detail') {
+          final productId = settings.arguments as String;
+          return MaterialPageRoute(
+            builder: (context) => ProductDetailScreen(productId: productId),
+          );
+        }
+        // 다른 동적 라우트들은 여기에 추가
+        return null;
       },
     );
   }
