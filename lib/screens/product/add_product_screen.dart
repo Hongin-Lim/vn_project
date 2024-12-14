@@ -20,10 +20,13 @@ class _AddProductScreenState extends State<AddProductScreen> {
   final _firestoreService = FirestoreService();
 
   final _nameController = TextEditingController();
+  final _brandController = TextEditingController();  // 브랜드명 컨트롤러 추가
   final _descriptionController = TextEditingController();
   final _imageUrlController = TextEditingController();
+  final _hashtagController = TextEditingController();  // 해시태그 컨트롤러 추가
 
   String? _selectedCategory;
+  List<String> _hashtags = [];  // 해시태그 목록
   bool _isLoading = false;
 
   // 디자인 상수
@@ -49,9 +52,11 @@ class _AddProductScreenState extends State<AddProductScreen> {
     try {
       final product = Product(
         name: _nameController.text,
+        brand: _brandController.text,  // 브랜드명 추가
         description: _descriptionController.text,
         category: _selectedCategory!,
         imageUrl: _imageUrlController.text,
+        hashtags: _hashtags,  // 해시태그 목록 추가
         createdAt: DateTime.now(),
         reviewCount: 0,
         averageRating: 0.0,
@@ -68,6 +73,24 @@ class _AddProductScreenState extends State<AddProductScreen> {
       }
     }
   }
+  /// 해시태그 추가
+  void _addHashtag() {
+    final hashtag = _hashtagController.text.trim();
+    if (hashtag.isNotEmpty && !_hashtags.contains(hashtag)) {
+      setState(() {
+        _hashtags.add(hashtag);
+        _hashtagController.clear();
+      });
+    }
+  }
+
+  /// 해시태그 삭제
+  void _removeHashtag(String hashtag) {
+    setState(() {
+      _hashtags.remove(hashtag);
+    });
+  }
+
 
   /// 폼 검증
   bool _validateForm() {
@@ -202,17 +225,25 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _buildSectionTitle('Thông tin cơ bản (기본 정보)'), // 기본 정보
+                    _buildSectionTitle('Thông tin cơ bản (기본 정보)'),
                     const SizedBox(height: 16),
                     _buildNameField(),
                     const SizedBox(height: 20),
+                    _buildBrandField(),  // 브랜드명 필드 추가
+                    const SizedBox(height: 20),
                     _buildDescriptionField(),
                     const SizedBox(height: 24),
-                    _buildSectionTitle('Phân loại (분류)'), // 분류
+                    _buildSectionTitle('Phân loại (분류)'),
                     const SizedBox(height: 16),
                     _buildCategoryDropdown(),
                     const SizedBox(height: 24),
-                    _buildSectionTitle('Hình ảnh (이미지)'), // 이미지
+                    _buildSectionTitle('Hashtags (해시태그)'),  // 해시태그 섹션 추가
+                    const SizedBox(height: 16),
+                    _buildHashtagField(),
+                    const SizedBox(height: 12),
+                    _buildHashtagList(),
+                    const SizedBox(height: 24),
+                    _buildSectionTitle('Hình ảnh (이미지)'),
                     const SizedBox(height: 16),
                     _buildImageUrlField(),
                     const SizedBox(height: 32),
@@ -395,11 +426,70 @@ class _AddProductScreenState extends State<AddProductScreen> {
     );
   }
 
+  // 브랜드명 입력 필드
+  Widget _buildBrandField() {
+    return _buildInputContainer(
+      child: TextFormField(
+        controller: _brandController,
+        decoration: _buildInputDecoration(
+          labelText: 'Tên thương hiệu (브랜드명)',
+          hintText: 'Nhập tên thương hiệu',
+          prefixIcon: Icons.business_outlined,
+        ),
+        validator: InputValidators.required('브랜드명을 입력해주세요'),
+      ),
+    );
+  }
+
+  // 해시태그 입력 필드
+  Widget _buildHashtagField() {
+    return _buildInputContainer(
+      child: Row(
+        children: [
+          Expanded(
+            child: TextFormField(
+              controller: _hashtagController,
+              decoration: _buildInputDecoration(
+                labelText: 'Hashtag (해시태그)',
+                hintText: '#해시태그 입력',
+                prefixIcon: Icons.tag_outlined,
+              ),
+              onFieldSubmitted: (_) => _addHashtag(),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.add_circle_outline, color: kPrimaryColor),
+            onPressed: _addHashtag,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 해시태그 목록 표시
+  Widget _buildHashtagList() {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: _hashtags.map((hashtag) {
+        return Chip(
+          label: Text(hashtag),
+          deleteIcon: const Icon(Icons.close, size: 18),
+          onDeleted: () => _removeHashtag(hashtag),
+          backgroundColor: kSecondaryColor,
+          labelStyle: GoogleFonts.notoSans(color: kPrimaryColor),
+        );
+      }).toList(),
+    );
+  }
+
   @override
   void dispose() {
     _nameController.dispose();
+    _brandController.dispose();  // 브랜드명 컨트롤러 dispose 추가
     _descriptionController.dispose();
     _imageUrlController.dispose();
+    _hashtagController.dispose();  // 해시태그 컨트롤러 dispose 추가
     super.dispose();
   }
 

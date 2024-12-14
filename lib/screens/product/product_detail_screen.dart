@@ -190,52 +190,95 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   /// 상품 수정 다이얼로그 표시
+// ProductDetailScreen의 _showEditDialog 메서드 수정
   Future<void> _showEditDialog() async {
     final nameController = TextEditingController(text: _product?.name);
+    final brandController = TextEditingController(text: _product?.brand);
     final descriptionController = TextEditingController(text: _product?.description);
     final imageUrlController = TextEditingController(text: _product?.imageUrl);
+    final hashtagController = TextEditingController();
+    final List<String> hashtags = List.from(_product?.hashtags ?? []);
 
     final result = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('상품 정보 수정', style: GoogleFonts.notoSans()),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(labelText: '상품명'),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: descriptionController,
-                decoration: const InputDecoration(labelText: '설명'),
-                maxLines: 3,
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: imageUrlController,
-                decoration: const InputDecoration(labelText: '이미지 URL'),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('취소', style: GoogleFonts.notoSans()),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.indigo,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Text('상품 정보 수정', style: GoogleFonts.notoSans()),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(labelText: '상품명'),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: brandController,
+                  decoration: const InputDecoration(labelText: '브랜드'),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: descriptionController,
+                  decoration: const InputDecoration(labelText: '설명'),
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: imageUrlController,
+                  decoration: const InputDecoration(labelText: '이미지 URL'),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: hashtagController,
+                        decoration: const InputDecoration(labelText: '해시태그'),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.add),
+                      onPressed: () {
+                        if (hashtagController.text.isNotEmpty) {
+                          setState(() {
+                            hashtags.add(hashtagController.text);
+                            hashtagController.clear();
+                          });
+                        }
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  children: hashtags.map((tag) => Chip(
+                    label: Text(tag),
+                    onDeleted: () {
+                      setState(() => hashtags.remove(tag));
+                    },
+                  )).toList(),
+                ),
+              ],
             ),
-            child: Text('수정', style: GoogleFonts.notoSans(
-              color: Colors.white,
-            )),
           ),
-        ],
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text('취소', style: GoogleFonts.notoSans()),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.indigo,
+              ),
+              child: Text('수정', style: GoogleFonts.notoSans(
+                color: Colors.white,
+              )),
+            ),
+          ],
+        ),
       ),
     );
 
@@ -245,8 +288,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           widget.productId,
           {
             'name': nameController.text,
+            'brand': brandController.text,
             'description': descriptionController.text,
             'imageUrl': imageUrlController.text,
+            'hashtags': hashtags,
           },
         );
         await _loadProductData();  // 데이터 새로고침
@@ -257,8 +302,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     }
 
     nameController.dispose();
+    brandController.dispose();
     descriptionController.dispose();
     imageUrlController.dispose();
+    hashtagController.dispose();
   }
 
   /// 상품 삭제 확인 다이얼로그 표시

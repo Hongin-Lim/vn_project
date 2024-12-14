@@ -315,6 +315,16 @@ class _ProductListScreenState extends State<ProductListScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // 브랜드명 추가
+                  Text(
+                    product.brand,
+                    style: GoogleFonts.notoSans(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
                   Text(
                     product.name,
                     style: GoogleFonts.notoSans(
@@ -325,6 +335,58 @@ class _ProductListScreenState extends State<ProductListScreen> {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
+// 해시태그 목록 추가
+                  if (product.hashtags.isNotEmpty)
+                    SizedBox(
+                      height: 22,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: product.hashtags.length > 3 ? 3 : product.hashtags.length,
+                        separatorBuilder: (context, index) => const SizedBox(width: 6),
+                        itemBuilder: (context, index) {
+                          final isLast = index == 2 && product.hashtags.length > 2; // 최대 2개까지만 표시
+
+                          // 파스텔톤 색상 배열
+                          final List<Color> tagColors = [
+                            const Color(0xFFE8F3FF),  // 연한 하늘색
+                            const Color(0xFFFFE8F3),  // 연한 분홍색
+                            const Color(0xFFF3E8FF),  // 연한 보라색
+
+                          ];
+
+                          final List<Color> textColors = [
+                            const Color(0xFF4A91F5),  // 하늘색 텍스트
+                            const Color(0xFFFF478A),  // 분홍색 텍스트
+                            const Color(0xFF9747FF),  // 보라색 텍스트
+
+                          ];
+
+                          return Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isLast ? const Color(0xFFF5F6F8) : tagColors[index % tagColors.length],
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              isLast
+                                  ? '+${product.hashtags.length - 2}'
+                                  : '#${product.hashtags[index]}',
+                              style: GoogleFonts.notoSans(
+                                fontSize: 11,
+                                height: 1.2,
+                                color: isLast ? const Color(0xFF8E94A0) : textColors[index % textColors.length],
+                                fontWeight: FontWeight.w500,
+                                letterSpacing: -0.2,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  const SizedBox(height: 8),
                   Row(
                     children: [
                       const Icon(Icons.star, size: 16, color: Colors.amber),
@@ -361,14 +423,14 @@ class _ProductListScreenState extends State<ProductListScreen> {
         child: Align(
           alignment: Alignment.bottomCenter,
           child: Container(
-            height: 40,
+            height: 50,  // 높이 증가
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
                   Colors.transparent,
-                  Colors.black.withOpacity(0.3),
+                  Colors.black.withOpacity(0.4),  // 투명도 증가
                 ],
               ),
             ),
