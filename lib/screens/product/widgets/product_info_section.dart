@@ -63,28 +63,82 @@ class ProductInfoSection extends StatelessWidget {
   }
 
   Widget _buildHashtags() {
+    // 파스텔톤 컬러 팔레트 정의
+    final List<Map<String, Color>> colorSets = [
+      {
+        'bg': const Color(0xFFE8F3FF),
+        'text': const Color(0xFF4A91F5),
+        'border': const Color(0xFFB7DCFF),
+      },
+      {
+        'bg': const Color(0xFFF3E8FF),
+        'text': const Color(0xFF9747FF),
+        'border': const Color(0xFFE2B7FF),
+      },
+      {
+        'bg': const Color(0xFFFFE8F3),
+        'text': const Color(0xFFFF478A),
+        'border': const Color(0xFFFFB7D5),
+      },
+    ];
+
     return Wrap(
       spacing: 8,
       runSpacing: 8,
       children: product.hashtags.map((tag) {
+        final colorSet = colorSets[product.hashtags.indexOf(tag) % colorSets.length];
+
         return Container(
           padding: const EdgeInsets.symmetric(
             horizontal: 12,
             vertical: 6,
           ),
           decoration: BoxDecoration(
-            color: const Color(0xFFF5F6F8),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Text(
-            '#$tag',
-            style: GoogleFonts.notoSans(
-              fontSize: 13,
-              color: const Color(0xFF4A5460),
-              fontWeight: FontWeight.w500,
-              height: 1.2,
-              letterSpacing: -0.3,
+            gradient: LinearGradient(
+              colors: [
+                colorSet['bg']!,
+                Color.lerp(colorSet['bg']!, Colors.white, 0.5)!,
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: colorSet['border']!,
+              width: 0.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: colorSet['bg']!.withOpacity(0.5),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '#',
+                style: GoogleFonts.notoSans(
+                  fontSize: 13,
+                  color: colorSet['text']!.withOpacity(0.6),
+                  fontWeight: FontWeight.w400,
+                  height: 1.2,
+                  letterSpacing: -0.3,
+                ),
+              ),
+              Text(
+                tag,
+                style: GoogleFonts.notoSans(
+                  fontSize: 13,
+                  color: colorSet['text'],
+                  fontWeight: FontWeight.w500,
+                  height: 1.2,
+                  letterSpacing: -0.3,
+                ),
+              ),
+            ],
           ),
         );
       }).toList(),
