@@ -105,13 +105,15 @@ class _ProductListScreenState extends State<ProductListScreen> {
     }).toList();
 
     switch (_currentFilter) {
-      case "Phổ biến":
+      case "Phổ biến": // 이름순 정렬
         filtered.sort((a, b) => a.name.compareTo(b.name));
         break;
-      case "Nhiều đánh giá":
+      case "Nhiều đánh giá": // 리뷰수 내림차순 정렬
         filtered.sort((a, b) => b.reviewCount.compareTo(a.reviewCount));
         break;
-      case "Mới nhất":
+      case "Mới nhất": // 생성일시 내림차순 정렬
+        filtered.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        break;
       // 이미 시간순 정렬되어 있으므로 별도 처리 불필요
         break;
     }

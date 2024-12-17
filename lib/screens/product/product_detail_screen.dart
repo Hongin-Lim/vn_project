@@ -169,7 +169,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   /// 상품 이미지 구성
   Widget _buildProductImage() {
     return Container(
-      height: 300,
+      height: 400,
       width: double.infinity,
       decoration: BoxDecoration(
         color: Colors.grey[200],
