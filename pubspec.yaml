@@ -47,6 +47,9 @@ dependencies:
   google_fonts: ^5.1.0  # Material Design 폰트 사용을 위한 패키지
   shimmer: ^3.0.0      # 로딩 상태에 반짝이는 효과를 주는 패키지
   carousel_slider: ^4.2.1  # 이미지/위젯 슬라이더 구현을 위한 패키지
+  google_sign_in: ^6.1.6 # 구글로그인
+  flutter_facebook_auth: ^6.0.3 # 페이스북 로그인
+  font_awesome_flutter: ^10.6.0  # 소셜 로그인 아이콘 등을 위한 패키지
 
 dev_dependencies:
   flutter_test:

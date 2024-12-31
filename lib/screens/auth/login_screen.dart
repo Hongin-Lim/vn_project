@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../services/auth_service.dart';
-import '../../services/firestore_service.dart';
+import '../../services/facebook_auth_service.dart'; // 소셜 아이콘용
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -10,54 +10,8 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _authService = AuthService();
-  final _firestoreService = FirestoreService();
+  final FacebookAuthService _facebookAuthService = FacebookAuthService();
   bool _isLoading = false;
-
-
-  Future<void> _signIn() async {
-    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Vui lòng nhập email và mật khẩu',
-            style: GoogleFonts.notoSans(),
-          ),
-          backgroundColor: Colors.red[400],
-        ),
-      );
-      return;
-    }
-
-    setState(() => _isLoading = true);
-
-    try {
-      final user = await _authService.signIn(
-        _emailController.text.trim(),
-        _passwordController.text.trim(),
-      );
-
-      if (user != null) {
-        await _firestoreService.updateLastLogin(user.uid);
-        Navigator.pushReplacementNamed(context, '/home');
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            e.toString(),
-            style: GoogleFonts.notoSans(),
-          ),
-          backgroundColor: Colors.red[400],
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -67,10 +21,7 @@ class _LoginScreenState extends State<LoginScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Colors.white,
-              Colors.grey[50]!,
-            ],
+            colors: [Colors.white, Color(0xFFFAFAFA)],
           ),
         ),
         child: SafeArea(
@@ -78,11 +29,14 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Padding(
               padding: const EdgeInsets.all(24.0),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildHeader(),
-                  const SizedBox(height: 40),
-                  _buildLoginForm(),
+                  const SizedBox(height: 48),
+                  _buildSocialLogins(),
+                  const SizedBox(height: 32),
+                  _buildDivider(),
+                  const SizedBox(height: 32),
+                  _buildEmailLogin(),
                   const SizedBox(height: 24),
                   _buildFooter(),
                 ],
@@ -95,227 +49,184 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildHeader() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              IconButton(
-                icon: Icon(Icons.arrow_back_ios, color: Color(0xFFfa6386)),
-                onPressed: () => Navigator.pop(context),
-              ),
-              Expanded(
-                child: Text(
-                  'Review Này',
-                  style: GoogleFonts.dancingScript(
-                    fontSize: 40,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFFfa6386),
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              SizedBox(width: 48),
-            ],
-          ),
-          Container(
-            margin: const EdgeInsets.only(top: 12, bottom: 2),
-            child: Text(
-              "Chào mừng trở lại",
-              style: GoogleFonts.notoSans(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
-                letterSpacing: -0.5,
-              ),
-            ),
-          ),
-          Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            child: Text(
-              "Đăng nhập để tiếp tục hành trình làm đẹp của bạn",
-              textAlign: TextAlign.center,
-              style: GoogleFonts.notoSans(
-                fontSize: 13,
-                color: Colors.grey[600],
-                height: 1.5,
-              ),
-            ),
-          ),
-          Container(
-            width: 60,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Color(0xFFfa6386).withOpacity(0.3),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLoginForm() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 20,
-            offset: Offset(0, 10),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildTextField(
-            "Email",
-            _emailController,
-            Icons.email_outlined,
-            false,
-          ),
-          const SizedBox(height: 16),
-          _buildTextField(
-            "Mật khẩu",
-            _passwordController,
-            Icons.lock_outline,
-            true,
-          ),
-          const SizedBox(height: 8),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: () {
-// 비밀번호 재설정 기능
-              },
-              child: Text(
-                "Quên mật khẩu?",
-                style: GoogleFonts.notoSans(
-                  color: Color(0xFFfa6386),
-                  fontSize: 13,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTextField(
-    String label,
-    TextEditingController controller,
-    IconData icon,
-    bool isPassword,
-  ) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Container(
+        //   height: 120,
+        //   child: Image.asset('assets/images/logo.png'), // 로고 이미지 추가 필요
+        // ),
+        // const SizedBox(height: 24),
         Text(
-          label,
-          style: GoogleFonts.notoSans(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Colors.grey[700],
+          'BenePick',
+          style: GoogleFonts.dancingScript(
+            fontSize: 40,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFFfa6386),
           ),
         ),
-        const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.grey[50],
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey[200]!),
-          ),
-          child: TextField(
-            controller: controller,
-            obscureText: isPassword,
-            style: GoogleFonts.notoSans(),
-            decoration: InputDecoration(
-              prefixIcon: Icon(icon, color: Colors.grey[600], size: 20),
-              border: InputBorder.none,
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            ),
+        const SizedBox(height: 16),
+        Text(
+          "당신의 뷰티 여정을 시작하세요",
+          style: GoogleFonts.notoSans(
+            fontSize: 16,
+            color: Colors.grey[600],
+            letterSpacing: 0.5,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildFooter() {
+  Widget _buildSocialLogins() {
     return Column(
       children: [
-        Container(
-          width: double.infinity,
-          height: 56,
-          child: ElevatedButton(
-            onPressed: _isLoading ? null : _signIn,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Color(0xFFfa6386),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              elevation: 0,
+        // Facebook 로그인 버튼
+        _buildSocialButton(
+          onPressed: () async {
+            setState(() => _isLoading = true);
+            try {
+              final result = await _facebookAuthService.signInWithFacebook();
+              if (result != null) {
+                Navigator.pushReplacementNamed(context, '/home');
+              }
+            } finally {
+              setState(() => _isLoading = false);
+            }
+          },
+          icon: FontAwesomeIcons.facebookF,
+          text: "Facebook으로 계속하기",
+          color: Color(0xFF1877F2),
+          textColor: Colors.white,
+        ),
+        const SizedBox(height: 16),
+        // Google 로그인 버튼
+        _buildSocialButton(
+          onPressed: () {
+            // Google 로그인 구현
+          },
+          icon: FontAwesomeIcons.google,
+          text: "Google로 계속하기",
+          color: Colors.white,
+          textColor: Colors.black87,
+          borderColor: Colors.grey[300],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSocialButton({
+    required VoidCallback onPressed,
+    required IconData icon,
+    required String text,
+    required Color color,
+    required Color textColor,
+    Color? borderColor,
+  }) {
+    return Container(
+      width: double.infinity,
+      height: 56,
+      child: ElevatedButton(
+        onPressed: _isLoading ? null : onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: color,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(
+              color: borderColor ?? Colors.transparent,
             ),
-            child: _isLoading
-                ? SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2,
-                    ),
-                  )
-                : Text(
-                    "Đăng nhập",
-                    style: GoogleFonts.notoSans(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
           ),
         ),
-        const SizedBox(height: 24),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: Stack(
           children: [
-            Text(
-              "Chưa có tài khoản? ",
-              style: GoogleFonts.notoSans(
-                color: Colors.grey[600],
-                fontSize: 14,
+            Positioned(
+              left: 16,
+              top: 0,
+              bottom: 0,
+              child: Icon(
+                icon,
+                color: textColor,
+                size: 20,
               ),
             ),
-            TextButton(
-              onPressed: () => Navigator.pushNamed(context, '/signup'),
+            Center(
               child: Text(
-                "Đăng ký",
+                text,
                 style: GoogleFonts.notoSans(
-                  color: Color(0xFFfa6386),
+                  color: textColor,
+                  fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  fontSize: 14,
                 ),
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildDivider() {
+    return Row(
+      children: [
+        Expanded(child: Divider(color: Colors.grey[300])),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Text(
+            "또는",
+            style: GoogleFonts.notoSans(
+              color: Colors.grey[600],
+              fontSize: 14,
+            ),
+          ),
+        ),
+        Expanded(child: Divider(color: Colors.grey[300])),
       ],
     );
   }
 
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    super.dispose();
+  Widget _buildEmailLogin() {
+    return TextButton(
+      onPressed: () {
+        // 이메일 로그인 화면으로 이동
+        Navigator.pushNamed(context, '/email-login');
+      },
+      style: TextButton.styleFrom(
+        padding: EdgeInsets.symmetric(vertical: 12),
+      ),
+      child: Text(
+        "이메일로 로그인하기",
+        style: GoogleFonts.notoSans(
+          color: Color(0xFFfa6386),
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFooter() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          "계정이 없으신가요? ",
+          style: GoogleFonts.notoSans(
+            color: Colors.grey[600],
+            fontSize: 14,
+          ),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pushNamed(context, '/signup'),
+          child: Text(
+            "회원가입",
+            style: GoogleFonts.notoSans(
+              color: Color(0xFFfa6386),
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }

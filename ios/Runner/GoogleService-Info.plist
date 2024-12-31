@@ -3,17 +3,17 @@
 <plist version="1.0">
 <dict>
 	<key>API_KEY</key>
-	<string>AIzaSyAsaE6R0d5ogxPOL2OkhDWHss3EIpYKBiU</string>
+	<string>AIzaSyDIBJzWO7Cn3HOiaMWg6YYJyCsvfkW3q-o</string>
 	<key>GCM_SENDER_ID</key>
-	<string>777692029381</string>
+	<string>165719448160</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.example.vnProject</string>
+	<string>com.vn.benepick</string>
 	<key>PROJECT_ID</key>
-	<string>vn-project-bed5c</string>
+	<string>benepick-7d89f</string>
 	<key>STORAGE_BUCKET</key>
-	<string>vn-project-bed5c.firebasestorage.app</string>
+	<string>benepick-7d89f.firebasestorage.app</string>
 	<key>IS_ADS_ENABLED</key>
 	<false></false>
 	<key>IS_ANALYTICS_ENABLED</key>
@@ -25,6 +25,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:777692029381:ios:d50b1a43d037885681ebac</string>
+	<string>1:165719448160:ios:a5cf506de8577d645cc105</string>
 </dict>
 </plist>

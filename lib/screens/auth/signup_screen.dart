@@ -48,7 +48,7 @@ class _SignupScreenState extends State<SignupScreen> {
       );
 
       if (user != null) {
-        final newUser = UserModel(
+        final newUser = UserModel.fromEmailSignup(
           email: _emailController.text.trim(),
           username: _usernameController.text.trim(),
           gender: _selectedGender,
@@ -62,6 +62,7 @@ class _SignupScreenState extends State<SignupScreen> {
           icon: _selectedIcon,
           role: 'user',
           grade: 'Bronze',
+          uid: '',
         );
 
         await _firestoreService.createUser(user.uid, newUser);

@@ -49,5 +49,20 @@
     <string>사진 선택을 위해 갤러리 접근 권한이 필요합니다.</string>
     <key>NSCameraUsageDescription</key>
     <string>사진 촬영을 위해 카메라 접근 권한이 필요합니다.</string>
+    <key>CFBundleURLTypes</key>
+    <array>
+      <dict>
+        <key>CFBundleURLSchemes</key>
+        <array>
+          <string>com.googleusercontent.apps.YOUR-CLIENT-ID</string>
+        </array>
+      </dict>
+    </array>
+    <key>FacebookAppID</key>
+    <string>[APP_ID]</string>
+    <key>FacebookClientToken</key>
+    <string>[CLIENT_TOKEN]</string>
+    <key>FacebookDisplayName</key>
+    <string>[APP_NAME]</string>
 </dict>
 </plist>

@@ -47,29 +47,31 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: "AIzaSyCma1lBaGJ_96iAKX5HKTS0AzcPLUBK-ig",
-    authDomain: "vn-project-bed5c.firebaseapp.com",
-    projectId: "vn-project-bed5c",
-    storageBucket: "vn-project-bed5c.firebasestorage.app",
-    messagingSenderId: "777692029381",
-    appId: "1:777692029381:web:da6f14e4639bdd7581ebac",
-    measurementId: "G-2ST1LMX4RS",
+    apiKey: "AIzaSyACa_AQoox_tUS8MXfaHFIBk4ukgNF2zoQ",
+    authDomain: "benepick-7d89f.firebaseapp.com",
+    projectId: "benepick-7d89f",
+    storageBucket: "benepick-7d89f.firebasestorage.app",
+    messagingSenderId: "165719448160",
+    appId: "1:165719448160:web:cc3ea908b2bfbd135cc105",
+    measurementId: "G-6XZM315ML3",
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: "AIzaSyCma1lBaGJ_96iAKX5HKTS0AzcPLUBK-ig",
-    appId: "1:777692029381:android:da6f14e4639bdd7581ebac",
-    messagingSenderId: "777692029381",
-    projectId: "vn-project-bed5c",
-    storageBucket: "vn-project-bed5c.firebasestorage.app",
+    apiKey: "AIzaSyBidTo6zIzLWN5q8RR8CIDywb-Dk32Rqco", // "current_key" 값
+    appId: "1:165719448160:android:eca1ac6bec969c3a5cc105", // "mobilesdk_app_id" 값
+    messagingSenderId: "165719448160", // "project_number" 값
+    projectId: "benepick-7d89f", // "project_id" 값
+    storageBucket: "benepick-7d89f.firebasestorage.app", // "storage_bucket" 값
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: "AIzaSyCma1lBaGJ_96iAKX5HKTS0AzcPLUBK-ig",
-    appId: "1:777692029381:ios:da6f14e4639bdd7581ebac",
-    messagingSenderId: "777692029381",
-    projectId: "vn-project-bed5c",
-    storageBucket: "vn-project-bed5c.firebasestorage.app",
-    iosBundleId: "com.example.vnProject",
+    apiKey: "AIzaSyDIBJzWO7Cn3HOiaMWg6YYJyCsvfkW3q-o", // "API_KEY"
+    appId: "1:165719448160:ios:a5cf506de8577d645cc105", // "GOOGLE_APP_ID"
+    messagingSenderId: "165719448160", // "GCM_SENDER_ID"
+    projectId: "benepick-7d89f", // "PROJECT_ID"
+    storageBucket: "benepick-7d89f.firebasestorage.app", // "STORAGE_BUCKET"
+    iosBundleId: "com.vn.benepick", // "BUNDLE_ID"
   );
+
+
 }

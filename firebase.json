@@ -3,25 +3,25 @@
     "platforms": {
       "android": {
         "default": {
-          "projectId": "vn-project-bed5c",
-          "appId": "1:777692029381:android:0901d0d8511c349181ebac",
+          "projectId": "benepick-7d89f",
+          "appId": "1:165719448160:android:eca1ac6bec969c3a5cc105",
           "fileOutput": "android/app/google-services.json"
         }
       },
       "ios": {
         "default": {
-          "projectId": "vn-project-bed5c",
-          "appId": "1:777692029381:ios:d50b1a43d037885681ebac",
+          "projectId": "benepick-7d89f",
+          "appId": "1:165719448160:ios:a5cf506de8577d645cc105",
           "uploadDebugSymbols": false,
           "fileOutput": "ios/Runner/GoogleService-Info.plist"
         }
       },
       "dart": {
         "lib/firebase_options.dart": {
-          "projectId": "vn-project-bed5c",
+          "projectId": "benepick-7d89f",
           "configurations": {
-            "android": "1:777692029381:android:0901d0d8511c349181ebac",
-            "ios": "1:777692029381:ios:d50b1a43d037885681ebac"
+            "android": "1:165719448160:android:eca1ac6bec969c3a5cc105",
+            "ios": "1:165719448160:ios:a5cf506de8577d645cc105"
           }
         }
       }

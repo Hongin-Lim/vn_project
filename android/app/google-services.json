@@ -1,21 +1,21 @@
 {
   "project_info": {
-    "project_number": "777692029381",
-    "project_id": "vn-project-bed5c",
-    "storage_bucket": "vn-project-bed5c.firebasestorage.app"
+    "project_number": "165719448160",
+    "project_id": "benepick-7d89f",
+    "storage_bucket": "benepick-7d89f.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:777692029381:android:0901d0d8511c349181ebac",
+        "mobilesdk_app_id": "1:165719448160:android:eca1ac6bec969c3a5cc105",
         "android_client_info": {
-          "package_name": "com.vn.beautiq"
+          "package_name": "com.vn.benepick"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyB-9tj1jGSDvHkPEA9Ux4wjvOk1VfJx2n8"
+          "current_key": "AIzaSyBidTo6zIzLWN5q8RR8CIDywb-Dk32Rqco"
         }
       ],
       "services": {
