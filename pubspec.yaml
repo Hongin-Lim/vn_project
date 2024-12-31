@@ -50,6 +50,7 @@ dependencies:
   google_sign_in: ^6.1.6 # 구글로그인
   flutter_facebook_auth: ^6.0.3 # 페이스북 로그인
   font_awesome_flutter: ^10.6.0  # 소셜 로그인 아이콘 등을 위한 패키지
+  intl: ^0.18.0 # 생년월일이 'YYYY-MM-DD' 형식으로 표시되도록 하기 위한 패키지
 
 dev_dependencies:
   flutter_test:

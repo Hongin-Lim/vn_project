@@ -1,53 +1,119 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <!-- 기본 메타 데이터 -->
   <meta charset="UTF-8">
   <title>BenePick</title>
+  <!-- PWA 관련 설정 -->
   <link href="manifest.json" rel="manifest">
   <meta content="#000000" name="theme-color">
+  <!-- 뷰포트 설정 -->
   <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
-  // web/index.html 파일에 다음 메타 태그를 추가해보세요
-  <meta content="*" name="Access-Control-Allow-Origin" />
-  <!-- Content Security Policy 수정 - Facebook 도메인 추가 -->
-  <meta content="default-src 'self' 'unsafe-inline' 'unsafe-eval' *.googleapis.com *.gstatic.com *.facebook.com *.facebook.net *.fbcdn.net;"
+  <!-- CORS 설정 -->
+  <meta content="*" name="Access-Control-Allow-Origin">
+
+  <!-- Content Security Policy (CSP) 설정 -->
+  <!--
+    현재는 개발 편의성을 위해 모든 소스를 허용하는 설정을 사용
+    배포 시에는 아래 주석 처리된 더 제한적인 CSP를 사용하는 것을 고려
+  -->
+  <!--  <meta content="default-src 'self' 'unsafe-inline' 'unsafe-eval' *.googleapis.com *.gstatic.com *.facebook.com *.facebook.net *.fbcdn.net;-->
+  <!--                img-src 'self' data: https: http:;-->
+  <!--                connect-src 'self' *.firebaseio.com *.googleapis.com"-->
+  <!--        http-equiv="Content-Security-Policy">-->
+  <meta content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob: *"
         http-equiv="Content-Security-Policy">
 
-  <!-- Google Sign-in -->
+  <!-- Google OAuth 클라이언트 ID 설정 -->
   <meta content="YOUR_GOOGLE_SIGN_IN_OAUTH_CLIENT_ID.apps.googleusercontent.com"
         name="google-signin-client_id">
 
+  <!-- 앱 딥링킹 설정 -->
+  <!-- iOS 앱 링킹 -->
+  <meta content="benepick://" property="al:ios:url" />
+  <meta content="your_app_store_id" property="al:ios:app_store_id" />
+  <meta content="BenePick" property="al:ios:app_name" />
+
+  <!-- Android 앱 링킹 -->
+  <meta content="benepick://" property="al:android:url" />
+  <meta content="com.ssafy.benepick" property="al:android:package" />
+  <meta content="BenePick" property="al:android:app_name" />
+
+  <!-- Open Graph 태그 (소셜 공유 및 앱 링킹용) -->
+  <meta content="BenePick" property="og:title" />
+  <meta content="website" property="og:type" />
+  <meta content="BenePick - 카드 혜택 추천 서비스" property="og:description" />
+
+  <!-- Flutter 웹 엔진 로드 -->
   <script defer src="flutter.js"></script>
 
   <!-- Facebook SDK 로드 -->
-  <script async crossorigin="anonymous"
+  <script async crossorigin="anonymous" defer
           src="https://connect.facebook.net/ko_KR/sdk.js">
   </script>
 </head>
 <body>
-<!-- Facebook SDK 초기화 -->
+<!-- Facebook SDK 초기화 설정 -->
 <script>
   window.fbAsyncInit = function() {
     FB.init({
-      appId      : '437874102595744',
-      cookie     : true,
-      xfbml      : true,
-      version    : 'v18.0'
+      appId      : '437874102595744',  // Facebook 앱 ID
+      cookie     : true,               // 쿠키 사용 허용
+      xfbml      : true,              // XFBML 파싱 허용
+      version    : 'v18.0',           // Facebook API 버전
+      auth_type  : 'rerequest',       // 인증 타입 설정
+      native_login: true,             // 네이티브 로그인 활성화
+      redirect_uri: window.location.origin,  // 리다이렉트 URI 설정
     });
 
+    // Flutter Facebook Auth 웹 지원을 위한 설정
+    window.FB.getLoginStatus(function(response) {
+      if (window.location.hash == '#reload') {
+        window.location.hash = '';
+        window.location.reload();
+      }
+    });
+
+    // Facebook 이벤트 로깅
     FB.AppEvents.logPageView();
     console.log("Facebook SDK initialized");
-  };
+
+    // Facebook 로그인 상태 확인
+    FB.getLoginStatus(function(response) {
+      console.log("Facebook login status:", response.status);
+    });
+
+    // 로그인 함수 설정
+    window.fbLogin = function() {
+      FB.login(function(response) {
+        if (response.authResponse) {
+          console.log('Facebook login successful');
+          // Flutter에 로그인 성공 알림
+          if (window.flutter_inappwebview) {
+            window.flutter_inappwebview.callHandler('onFacebookLogin', response);
+          }
+        }
+      }, {
+        scope: 'email,public_profile',
+        auth_type: 'rerequest',
+        display: 'touch',  // 모바일에서는 앱/브라우저, 데스크톱에서는 팝업
+        return_scopes: true,
+        enable_profile_selector: true,
+        auth_nonce: Math.random().toString(36).substring(2), // 보안 강화
+      });
+    };
+};
 </script>
 
-<!-- Firebase 초기화 -->
+<!-- Firebase 초기화 및 설정 -->
 <script type="module">
-  // Import the functions you need from the SDKs you need
+  // Firebase SDK 모듈 임포트
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
   import { getStorage } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
   import { getAuth } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-  // Your web app's Firebase configuration
+  // Firebase 설정 객체
   const firebaseConfig = {
     apiKey: "AIzaSyACa_AQoox_tUS8MXfaHFIBk4ukgNF2zoQ",
     authDomain: "benepick-7d89f.firebaseapp.com",
@@ -58,35 +124,38 @@
     measurementId: "G-6XZM315ML3"
   };
 
-  // Initialize Firebase
+  // Firebase 초기화
   const app = initializeApp(firebaseConfig);
   const analytics = getAnalytics(app);
   const storage = getStorage(app);
   const auth = getAuth(app);
 
-  // 전역 객체에 storage 할당
+  // Flutter에서 접근할 수 있도록 storage를 전역 객체에 할당
   window.flutterStorage = storage;
 
+  // 초기화 로그
   console.log("Firebase Initialized:", app);
   console.log("Storage Initialized:", storage);
   console.log("Storage attached to window:", window.flutterStorage);
 </script>
 
-<!-- Service Worker 등록 -->
+<!-- Service Worker 등록 (PWA 지원) -->
 <script>
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/flutter_service_worker.js')
-      .then(function (registration) {
-        console.log('Service Worker 등록 성공:', registration.scope);
-      })
-      .catch(function (error) {
-        console.error('Service Worker 등록 실패:', error);
-      });
+    window.addEventListener('load', function() {
+      navigator.serviceWorker.register('/flutter_service_worker.js')
+        .then(function(registration) {
+          console.log('Service Worker 등록 성공:', registration.scope);
+        })
+        .catch(function(error) {
+          console.error('Service Worker 등록 실패:', error);
+        });
+    });
   }
 </script>
 
-<!-- Flutter 앱 스크립트 -->
-<script src="main.dart.js"></script>
+<!-- Flutter 앱 메인 스크립트 -->
+<script src="main.dart.js" type="application/javascript"></script>
 
 </body>
 </html>

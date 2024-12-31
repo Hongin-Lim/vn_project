@@ -123,7 +123,7 @@ class UserInfoCard extends StatelessWidget {
         if (user != null) ...[
           const SizedBox(height: 4),
           Text(
-            '${user.region} · ${user.gender} · ${user.age}세',
+            '${user.region} · ${user.gender} · ${user.birthDate}세',
             style: GoogleFonts.notoSans(
               fontSize: 14,
               color: Colors.grey[600],

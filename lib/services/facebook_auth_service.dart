@@ -1,13 +1,24 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 
+/// Facebook 로그인 결과를 담는 클래스
+class FacebookSignInResult {
+  final UserCredential userCredential;
+  final Map<String, dynamic> userData;
+
+  FacebookSignInResult({
+    required this.userCredential,
+    required this.userData,
+  });
+}
+
 /// Facebook 로그인 관련 기능을 처리하는 서비스 클래스
 class FacebookAuthService {
   final FacebookAuth _facebookAuth = FacebookAuth.instance;
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
 
   /// Facebook 로그인 수행
-  Future<UserCredential?> signInWithFacebook() async {
+  Future<FacebookSignInResult?> signInWithFacebook() async {
     try {
       // Facebook 로그인 시도
       final LoginResult loginResult = await _facebookAuth.login(
@@ -17,6 +28,7 @@ class FacebookAuthService {
           // 'user_gender',  // 성별 정보가 필요한 경우
           // 'user_birthday',// 생년월일 정보가 필요한 경우
         ],
+        loginBehavior: LoginBehavior.dialogOnly,
       );
 
       // 로그인 상태 확인
@@ -50,7 +62,11 @@ class FacebookAuthService {
             print('사용자 이름: ${userCredential.user?.displayName}');
             print('프로필 URL: ${userCredential.user?.photoURL}');
 
-            return userCredential;
+            // FacebookSignInResult 객체로 반환
+            return FacebookSignInResult(
+              userCredential: userCredential,
+              userData: userData,
+            );
           } on FirebaseAuthException catch (e) {
             // Firebase 인증 관련 에러 처리
             String errorMessage = '';

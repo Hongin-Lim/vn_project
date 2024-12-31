@@ -1,5 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 
 import '../../models/user_model.dart';
@@ -19,7 +21,7 @@ class EditProfileScreen extends StatefulWidget {
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController _usernameController;
-  late TextEditingController _ageController;
+  late TextEditingController _birthDateController;
   late String _selectedGender;
   late String _selectedRegion;
   late String _selectedSkinType;
@@ -39,8 +41,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.initState();
     _usernameController =
         TextEditingController(text: widget.userModel.username);
-    _ageController =
-        TextEditingController(text: widget.userModel.age.toString());
+    _birthDateController = TextEditingController(
+      text: DateFormat('yyyy-MM-dd').format(widget.userModel.birthDate),
+    );
     _selectedGender = widget.userModel.gender;
     _selectedRegion = widget.userModel.region;
     _selectedSkinType = widget.userModel.skinType;
@@ -58,9 +61,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       final user = _authService.currentUser;
       if (user != null) {
         // 업데이트할 데이터 준비
+        DateTime? parsedDate;
+        try {
+          parsedDate = DateFormat('yyyy-MM-dd').parse(_birthDateController.text.trim());
+        } catch (e) {
+          // 날짜 파싱 실패 처리
+          print('날짜 형식이 올바르지 않습니다: ${e.toString()}');
+          return;
+        }
+
         final updateData = {
           'username': _usernameController.text.trim(),
-          'age': int.parse(_ageController.text.trim()),
+          'birthDate': Timestamp.fromDate(parsedDate),
           'gender': _selectedGender,
           'region': _selectedRegion,
           'skinType': _selectedSkinType,
@@ -213,7 +225,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         children: [
           _buildTextField("Tên người dùng", _usernameController, Icons.person),
           const SizedBox(height: 16),
-          _buildTextField("Tuổi", _ageController, Icons.cake, isNumber: true),
+          _buildDateField("Ngày sinh", _birthDateController, Icons.cake), // 수정된 부분
           const SizedBox(height: 16),
           _buildDropdown(),
           const SizedBox(height: 16),
@@ -222,6 +234,34 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           _buildIconSelector(),
         ],
       ),
+    );
+  }
+
+// 날짜 선택을 위한 새로운 위젯 메서드 추가
+  Widget _buildDateField(String label, TextEditingController controller, IconData icon) {
+    return TextFormField(
+      controller: controller,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon),
+        suffixIcon: IconButton(
+          icon: Icon(Icons.calendar_today),
+          onPressed: () async {
+            final DateTime? picked = await showDatePicker(
+              context: context,
+              initialDate: controller.text.isEmpty
+                  ? DateTime.now()
+                  : DateFormat('yyyy-MM-dd').parse(controller.text),
+              firstDate: DateTime(1900),
+              lastDate: DateTime.now(),
+            );
+            if (picked != null) {
+              controller.text = DateFormat('yyyy-MM-dd').format(picked);
+            }
+          },
+        ),
+      ),
+      readOnly: true, // 직접 입력 방지
     );
   }
 
@@ -555,7 +595,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   void dispose() {
     _usernameController.dispose();
-    _ageController.dispose();
+    _birthDateController.dispose();
     super.dispose();
   }
 }

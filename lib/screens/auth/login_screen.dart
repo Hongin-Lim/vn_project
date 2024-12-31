@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../services/facebook_auth_service.dart'; // 소셜 아이콘용
+import '../../services/facebook_auth_service.dart';
+import 'facebook_additional_info_screen.dart'; // 소셜 아이콘용
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -80,15 +81,40 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _buildSocialLogins() {
     return Column(
       children: [
-        // Facebook 로그인 버튼
+// Facebook 로그인 버튼
         _buildSocialButton(
           onPressed: () async {
             setState(() => _isLoading = true);
             try {
               final result = await _facebookAuthService.signInWithFacebook();
               if (result != null) {
-                Navigator.pushReplacementNamed(context, '/home');
+                // 추가 정보 입력 화면으로 이동
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => FacebookAdditionalInfoScreen(
+                      userCredential: result.userCredential,
+                      facebookUserData: result.userData,
+                    ),
+                  ),
+                );
               }
+            } catch (e) {
+              print('Facebook 로그인 중 오류 발생: $e');
+              // 에러 처리를 위한 다이얼로그 표시
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: Text('로그인 오류'),
+                  content: Text('Facebook 로그인 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text('확인'),
+                    ),
+                  ],
+                ),
+              );
             } finally {
               setState(() => _isLoading = false);
             }

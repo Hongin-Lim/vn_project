@@ -2,23 +2,28 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import 'package:multi_select_flutter/multi_select_flutter.dart';
+import 'package:multi_select_flutter/chip_display/multi_select_chip_display.dart';
+import 'package:multi_select_flutter/dialog/multi_select_dialog_field.dart';
+import 'package:multi_select_flutter/util/multi_select_item.dart';
 
 import '../../models/user_model.dart';
-import '../../services/auth_service.dart';
 import '../../services/firestore_service.dart';
 import '../../utils/profile_util.dart';
 
-class SignupScreen extends StatefulWidget {
+class FacebookAdditionalInfoScreen extends StatefulWidget {
+  final UserCredential userCredential;
+  final Map<String, dynamic> facebookUserData;
+
+  FacebookAdditionalInfoScreen({
+    required this.userCredential,
+    required this.facebookUserData,
+  });
+
   @override
-  _SignupScreenState createState() => _SignupScreenState();
+  _FacebookAdditionalInfoScreenState createState() => _FacebookAdditionalInfoScreenState();
 }
 
-class _SignupScreenState extends State<SignupScreen> {
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _usernameController = TextEditingController();
-  final _nameController = TextEditingController();
+class _FacebookAdditionalInfoScreenState extends State<FacebookAdditionalInfoScreen> {
   final _birthDateController = TextEditingController();
 
   String _selectedGender = 'Male';
@@ -27,7 +32,7 @@ class _SignupScreenState extends State<SignupScreen> {
   List<String> _selectedSkinConditions = [];
   String _selectedIcon = '😊';
 
-
+  final _firestoreService = FirestoreService();
 
   // ProfileUtils에서 옵션들 가져오기
   final genderOptions = ProfileUtils.genderOptions;
@@ -36,70 +41,51 @@ class _SignupScreenState extends State<SignupScreen> {
   final skinConditionsOptions = ProfileUtils.skinConditionsOptions;
   final iconOptions = ProfileUtils.iconOptions;
 
-  final _authService = AuthService();
-  final _firestoreService = FirestoreService();  // 추가
-
-  void _signUp() async {
+  void _completeSignup() async {
     if (!_validateInputs()) return;
 
     try {
-      User? user = await _authService.signUp(
-        _emailController.text.trim(),
-        _passwordController.text.trim(),
+      DateTime? parsedDate;
+      try {
+        parsedDate = DateFormat('yyyy-MM-dd').parse(_birthDateController.text.trim());
+      } catch (e) {
+        _showErrorDialog('입력 오류', '올바른 생년월일 형식이 아닙니다.');
+        return;
+      }
+
+      // Facebook에서 받아온 정보와 추가 입력 정보를 합쳐서 UserModel 생성
+      final newUser = UserModel(
+        email: widget.userCredential.user?.email ?? '',
+        username: widget.facebookUserData['name'] ?? '',
+        gender: _selectedGender,
+        birthDate: parsedDate,
+        region: _selectedRegion,
+        skinType: _selectedSkinType,
+        skinConditions: _selectedSkinConditions,
+        createdAt: DateTime.now(),
+        lastLoginAt: DateTime.now(),
+        profileImageUrl: widget.userCredential.user?.photoURL ?? '',
+        icon: _selectedIcon,
+        role: 'user',
+        grade: 'Bronze',
+        uid: widget.userCredential.user?.uid ?? '',
       );
 
-      if (user != null) {
-        DateTime? parsedDate;
-        try {
-          parsedDate = DateFormat('yyyy-MM-dd').parse(_birthDateController.text.trim());
-        } catch (e) {
-          // 날짜 파싱 실패 처리
-          print('날짜 형식이 올바르지 않습니다: ${e.toString()}');
-          return;
-        }
+      // Firestore에 사용자 정보 저장
+      await _firestoreService.createUser(widget.userCredential.user!.uid, newUser);
 
-        final newUser = UserModel.fromEmailSignup(
-          email: _emailController.text.trim(),
-          username: _usernameController.text.trim(),
-          gender: _selectedGender,
-          birthDate: parsedDate,
-          region: _selectedRegion,
-          skinType: _selectedSkinType,
-          skinConditions: _selectedSkinConditions,
-          createdAt: DateTime.now(),
-          lastLoginAt: DateTime.now(),
-          profileImageUrl: '',
-          icon: _selectedIcon,
-          role: 'user',
-          grade: 'Bronze',
-          uid: '',
-        );
-
-        await _firestoreService.createUser(user.uid, newUser);
-        Navigator.pushReplacementNamed(context, '/login');
-      }
+      // 메인 화면으로 이동
+      Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
-      _showErrorDialog('Lỗi đăng ký', e.toString());
+      _showErrorDialog('오류 발생', e.toString());
     }
   }
 
   bool _validateInputs() {
-    if (_emailController.text.isEmpty ||
-        _passwordController.text.isEmpty ||
-        _usernameController.text.isEmpty ||
-        _birthDateController.text.isEmpty) {
-      _showErrorDialog('입력 오류', '모든 필수 항목을 입력해주세요.');
+    if (_birthDateController.text.isEmpty) {
+      _showErrorDialog('입력 오류', '생년월일을 입력해주세요.');
       return false;
     }
-
-    // 날짜 형식 유효성 검사 추가
-    try {
-      DateFormat('yyyy-MM-dd').parse(_birthDateController.text.trim());
-    } catch (e) {
-      _showErrorDialog('입력 오류', '올바른 생년월일 형식이 아닙니다.');
-      return false;
-    }
-
     return true;
   }
 
@@ -142,9 +128,9 @@ class _SignupScreenState extends State<SignupScreen> {
                 children: [
                   _buildHeader(),
                   const SizedBox(height: 32),
-                  _buildSignupForm(),
+                  _buildAdditionalInfoForm(),
                   const SizedBox(height: 24),
-                  _buildFooter(),
+                  _buildCompleteButton(),
                 ],
               ),
             ),
@@ -161,32 +147,19 @@ class _SignupScreenState extends State<SignupScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              IconButton(
-                icon: Icon(Icons.arrow_back_ios, color: Color(0xFFfa6386)),
-                onPressed: () => Navigator.pop(context),
-              ),
-              Expanded(
-                child: Text(
-                  'Review Này',
-                  style: GoogleFonts.dancingScript(
-                    fontSize: 40,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFFfa6386),
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              // 좌우 대칭을 위한 투명한 아이콘 버튼
-              SizedBox(width: 48),  // IconButton의 기본 너비만큼 공간 확보
-            ],
+          Text(
+            'Review Này',
+            style: GoogleFonts.dancingScript(
+              fontSize: 40,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFFfa6386),
+            ),
+            textAlign: TextAlign.center,
           ),
           Container(
             margin: const EdgeInsets.only(top: 12, bottom: 2),
             child: Text(
-              "Tạo tài khoản mới",
+              "추가 정보 입력",
               style: GoogleFonts.notoSans(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -198,7 +171,7 @@ class _SignupScreenState extends State<SignupScreen> {
           Container(
             margin: const EdgeInsets.only(bottom: 12),
             child: Text(
-              "Bắt đầu hành trình làm đẹp của bạn ngay hôm nay",
+              "피부 관리 여정을 시작하기 위해\n몇 가지 추가 정보가 필요해요",
               textAlign: TextAlign.center,
               style: GoogleFonts.notoSans(
                 fontSize: 13,
@@ -220,7 +193,7 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
-  Widget _buildSignupForm() {
+  Widget _buildAdditionalInfoForm() {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -237,13 +210,13 @@ class _SignupScreenState extends State<SignupScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildTextField("Email", _emailController, Icons.email),
-          const SizedBox(height: 16),
-          _buildTextField("Mật khẩu", _passwordController, Icons.lock, isPassword: true),
-          const SizedBox(height: 16),
-          _buildTextField("Tên người dùng", _usernameController, Icons.person),
-          const SizedBox(height: 16),
-          _buildDateField("Ngày sinh", _birthDateController, Icons.cake), // 수정된 부분
+          // 페이스북 프로필 정보 표시
+          _buildFacebookProfileInfo(),
+          const SizedBox(height: 24),
+          Divider(color: Colors.grey[300]),
+          const SizedBox(height: 24),
+          // 추가 정보 입력 폼
+          _buildDateField("생년월일", _birthDateController, Icons.cake),
           const SizedBox(height: 16),
           _buildDropdown(),
           const SizedBox(height: 16),
@@ -255,42 +228,88 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
-// 날짜 선택을 위한 위젯 메서드가 이미 위에서 정의되어 있다고 가정
-// 없다면 아래 메서드도 추가 필요
-  Widget _buildDateField(String label, TextEditingController controller, IconData icon) {
-    return TextFormField(
-      controller: controller,
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(icon),
-        suffixIcon: IconButton(
-          icon: Icon(Icons.calendar_today),
-          onPressed: () async {
-            final DateTime? picked = await showDatePicker(
-              context: context,
-              initialDate: controller.text.isEmpty
-                  ? DateTime.now()
-                  : DateFormat('yyyy-MM-dd').parse(controller.text),
-              firstDate: DateTime(1900),
-              lastDate: DateTime.now(),
-            );
-            if (picked != null) {
-              controller.text = DateFormat('yyyy-MM-dd').format(picked);
-            }
-          },
+// 페이스북 프로필 정보를 보여주는 위젯
+  Widget _buildFacebookProfileInfo() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "페이스북 프로필 정보",
+          style: GoogleFonts.notoSans(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey[800],
+          ),
         ),
-      ),
-      readOnly: true, // 직접 입력 방지
+        const SizedBox(height: 16),
+        // 프로필 이미지와 이름을 가로로 배치
+        Row(
+          children: [
+            // 프로필 이미지
+            Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.grey[200], // 배경색 추가
+              ),
+              child: widget.facebookUserData['picture']?['data']?['url'] != null ||
+                  widget.userCredential.user?.photoURL != null
+                  ? ClipOval(
+                child: Image.network(
+                  widget.facebookUserData['picture']?['data']?['url'] ??
+                      widget.userCredential.user?.photoURL!,
+                  fit: BoxFit.cover,
+                ),
+              )
+                  : Icon(
+                Icons.person,
+                size: 40,
+                color: Colors.grey[500],
+              ),
+            ),
+            const SizedBox(width: 16),
+            // 이름과 이메일을 세로로 배치
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.facebookUserData['name'] ?? '이름 없음',
+                    style: GoogleFonts.notoSans(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey[800],
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    widget.userCredential.user?.email ?? '이메일 없음',
+                    style: GoogleFonts.notoSans(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        // 페이스북으로 가져온 정보임을 알리는 텍스트
+        Text(
+          "* 페이스북 계정에서 가져온 정보입니다",
+          style: GoogleFonts.notoSans(
+            fontSize: 12,
+            color: Colors.grey[500],
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildTextField(
-      String label,
-      TextEditingController controller,
-      IconData icon, {
-        bool isPassword = false,
-        bool isNumber = false,
-      }) {
+  Widget _buildDateField(String label, TextEditingController controller, IconData icon) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -311,14 +330,25 @@ class _SignupScreenState extends State<SignupScreen> {
           ),
           child: TextField(
             controller: controller,
-            obscureText: isPassword,
-            keyboardType: isNumber ? TextInputType.number : TextInputType.text,
-            style: GoogleFonts.notoSans(),
+            readOnly: true,
             decoration: InputDecoration(
               prefixIcon: Icon(icon, color: Colors.grey[600], size: 20),
+              suffixIcon: IconButton(
+                icon: Icon(Icons.calendar_today),
+                onPressed: () async {
+                  final DateTime? picked = await showDatePicker(
+                    context: context,
+                    initialDate: DateTime.now(),
+                    firstDate: DateTime(1900),
+                    lastDate: DateTime.now(),
+                  );
+                  if (picked != null) {
+                    controller.text = DateFormat('yyyy-MM-dd').format(picked);
+                  }
+                },
+              ),
               border: InputBorder.none,
-              contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             ),
           ),
         ),
@@ -326,6 +356,7 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
+  // [이전 코드의 _buildDropdown, _buildSkinTypeSection, _buildIconSelector 메서드들을 그대로 사용]
   Widget _buildDropdown() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -403,9 +434,6 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
-
-
-// _buildSkinTypeSection() 메서드를 수정
   Widget _buildSkinTypeSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -550,80 +578,32 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
-  Widget _buildFooter() {
-    return Column(
-      children: [
-        Container(
-          width: double.infinity,
-          height: 56,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.deepPurple, Colors.deepPurple.shade700],
-            ),
+  Widget _buildCompleteButton() {
+    return Container(
+      width: double.infinity,
+      height: 56,
+      child: ElevatedButton(
+        onPressed: _completeSignup,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Color(0xFFfa6386),
+          shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.deepPurple.withOpacity(0.3),
-                blurRadius: 10,
-                offset: Offset(0, 5),
-              ),
-            ],
-          ),
-          child: ElevatedButton(
-            onPressed: _signUp,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Color(0xFFfa6386),
-              shadowColor: Color(0xFFfa6386),
-              // backgroundColor: Colors.transparent,
-              // shadowColor: Colors.transparent,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-            child: Text(
-              "Đăng ký",
-              style: GoogleFonts.notoSans(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              ),
-            ),
           ),
         ),
-        const SizedBox(height: 24),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              "Bạn đã có tài khoản? ",
-              style: GoogleFonts.notoSans(
-                color: Colors.grey[600],
-                fontSize: 14,
-              ),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pushNamed(context, '/login'),
-              child: Text(
-                "Login",
-                style: GoogleFonts.notoSans(
-                  color: Colors.deepPurple,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                ),
-              ),
-            ),
-          ],
+        child: Text(
+          "완료",
+          style: GoogleFonts.notoSans(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
         ),
-      ],
+      ),
     );
   }
 
   @override
   void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    _usernameController.dispose();
-    _nameController.dispose();
     _birthDateController.dispose();
     super.dispose();
   }

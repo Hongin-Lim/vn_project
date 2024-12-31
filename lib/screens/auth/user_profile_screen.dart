@@ -280,7 +280,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         children: [
           _buildInfoSection('Thông tin cá nhân', [
             _buildInfoItem('Email', _userModel?.email ?? '', Icons.email),
-            _buildInfoItem('Tuổi', '${_userModel?.age ?? ''} tuổi', Icons.cake),
+            _buildInfoItem('Tuổi', '${_userModel?.birthDate ?? ''} tuổi', Icons.cake),
             _buildInfoItem('Giới tính', _userModel?.gender ?? '', Icons.person),
             _buildInfoItem(
                 'Khu vực', _userModel?.region ?? '', Icons.location_on),

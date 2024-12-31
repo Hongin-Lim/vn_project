@@ -11,9 +11,9 @@ class AuthProvider with ChangeNotifier {
 
   Future<bool> signInWithFacebook() async {
     try {
-      final userCredential = await _facebookAuthService.signInWithFacebook();
-      if (userCredential != null) {
-        _user = userCredential.user;
+      final result = await _facebookAuthService.signInWithFacebook();
+      if (result != null) {
+        _user = result.userCredential.user;  // userCredential에서 user를 가져옴
         notifyListeners();
         return true;
       }
