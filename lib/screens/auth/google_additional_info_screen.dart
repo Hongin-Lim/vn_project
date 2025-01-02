@@ -10,20 +10,19 @@ import '../../models/user_model.dart';
 import '../../services/firestore_service.dart';
 import '../../utils/profile_util.dart';
 
-class FacebookAdditionalInfoScreen extends StatefulWidget {
+class GoogleAdditionalInfoScreen extends StatefulWidget {
   final UserCredential userCredential;
-  final Map<String, dynamic> facebookUserData;
 
-  FacebookAdditionalInfoScreen({
+  const GoogleAdditionalInfoScreen({
+    Key? key,
     required this.userCredential,
-    required this.facebookUserData,
-  });
+  }) : super(key: key);
 
   @override
-  _FacebookAdditionalInfoScreenState createState() => _FacebookAdditionalInfoScreenState();
+  _GoogleAdditionalInfoScreenState createState() => _GoogleAdditionalInfoScreenState();
 }
 
-class _FacebookAdditionalInfoScreenState extends State<FacebookAdditionalInfoScreen> {
+class _GoogleAdditionalInfoScreenState extends State<GoogleAdditionalInfoScreen> {
   final _birthDateController = TextEditingController();
 
   String _selectedGender = 'Male';
@@ -53,12 +52,12 @@ class _FacebookAdditionalInfoScreenState extends State<FacebookAdditionalInfoScr
         return;
       }
 
-      // Facebook에서 받아온 정보와 추가 입력 정보를 합쳐서 UserModel 생성
+      // Google 로그인 정보와 추가 입력 정보를 합쳐서 UserModel 생성
       final newUser = UserModel(
         email: widget.userCredential.user?.email ?? '',
-        username: widget.facebookUserData['name'] ?? '',
-        socialProvider: 'facebook',  // 추가
-        socialId: (widget.facebookUserData['id'] ?? '').toString(),  // 추가
+        username: widget.userCredential.user?.displayName ?? '',
+        socialProvider: 'google',
+        socialId: widget.userCredential.user?.uid ?? '',
         gender: _selectedGender,
         birthDate: parsedDate,
         region: _selectedRegion,
@@ -72,7 +71,9 @@ class _FacebookAdditionalInfoScreenState extends State<FacebookAdditionalInfoScr
         grade: 'Bronze',
         uid: widget.userCredential.user?.uid ?? '',
         phoneVerifiedAt: null,  // 추가
-        linkedProviders: ['facebook'], // 추가
+        linkedProviders: ['google'], // 추가
+
+
       );
 
       // Firestore에 사용자 정보 저장
@@ -214,8 +215,8 @@ class _FacebookAdditionalInfoScreenState extends State<FacebookAdditionalInfoScr
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 페이스북 프로필 정보 표시
-          _buildFacebookProfileInfo(),
+          // 구글 프로필 정보 표시
+          _buildGoogleProfileInfo(),
           const SizedBox(height: 24),
           Divider(color: Colors.grey[300]),
           const SizedBox(height: 24),
@@ -230,13 +231,12 @@ class _FacebookAdditionalInfoScreenState extends State<FacebookAdditionalInfoScr
     );
   }
 
-// 페이스북 프로필 정보를 보여주는 위젯
-  Widget _buildFacebookProfileInfo() {
+  Widget _buildGoogleProfileInfo() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          "페이스북 프로필 정보",
+          "구글 프로필 정보",
           style: GoogleFonts.notoSans(
             fontSize: 16,
             fontWeight: FontWeight.w600,
@@ -244,23 +244,19 @@ class _FacebookAdditionalInfoScreenState extends State<FacebookAdditionalInfoScr
           ),
         ),
         const SizedBox(height: 16),
-        // 프로필 이미지와 이름을 가로로 배치
         Row(
           children: [
-            // 프로필 이미지
             Container(
               width: 60,
               height: 60,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.grey[200], // 배경색 추가
+                color: Colors.grey[200],
               ),
-              child: widget.facebookUserData['picture']?['data']?['url'] != null ||
-                  widget.userCredential.user?.photoURL != null
+              child: widget.userCredential.user?.photoURL != null
                   ? ClipOval(
                 child: Image.network(
-                  widget.facebookUserData['picture']?['data']?['url'] ??
-                      widget.userCredential.user?.photoURL!,
+                  widget.userCredential.user!.photoURL!,
                   fit: BoxFit.cover,
                 ),
               )
@@ -271,13 +267,12 @@ class _FacebookAdditionalInfoScreenState extends State<FacebookAdditionalInfoScr
               ),
             ),
             const SizedBox(width: 16),
-            // 이름과 이메일을 세로로 배치
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    widget.facebookUserData['name'] ?? '이름 없음',
+                    widget.userCredential.user?.displayName ?? '이름 없음',
                     style: GoogleFonts.notoSans(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
@@ -298,9 +293,8 @@ class _FacebookAdditionalInfoScreenState extends State<FacebookAdditionalInfoScr
           ],
         ),
         const SizedBox(height: 8),
-        // 페이스북으로 가져온 정보임을 알리는 텍스트
         Text(
-          "* 페이스북 계정에서 가져온 정보입니다",
+          "* 구글 계정에서 가져온 정보입니다",
           style: GoogleFonts.notoSans(
             fontSize: 12,
             color: Colors.grey[500],
@@ -358,7 +352,6 @@ class _FacebookAdditionalInfoScreenState extends State<FacebookAdditionalInfoScr
     );
   }
 
-  // [이전 코드의 _buildDropdown, _buildSkinTypeSection, _buildIconSelector 메서드들을 그대로 사용]
   Widget _buildDropdown() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

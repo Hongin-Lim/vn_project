@@ -3,7 +3,9 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/facebook_auth_service.dart';
-import 'facebook_additional_info_screen.dart'; // 소셜 아이콘용
+import '../../services/google_auth_service.dart';
+import 'facebook_additional_info_screen.dart';
+import 'google_additional_info_screen.dart'; // 소셜 아이콘용
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -12,6 +14,7 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final FacebookAuthService _facebookAuthService = FacebookAuthService();
+  final GoogleAuthService _googleAuthService = GoogleAuthService();
   bool _isLoading = false;
 
   @override
@@ -81,40 +84,75 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _buildSocialLogins() {
     return Column(
       children: [
-// Facebook 로그인 버튼
+        // Google 로그인 버튼
+        _buildSocialButton(
+          onPressed: () async {
+            setState(() => _isLoading = true);
+            try {
+              final result = await _googleAuthService.signInWithGoogle();
+              if (result != null) {
+                // 기존 회원인지 확인
+                final needsInfo = await _googleAuthService.needsAdditionalInfo(result.user!.uid);
+
+                if (needsInfo) {
+                  // 추가 정보가 필요한 경우에만 입력 화면으로 이동
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => GoogleAdditionalInfoScreen(
+                        userCredential: result,
+                      ),
+                    ),
+                  );
+                } else {
+                  // 기존 회원인 경우 메인 화면으로 이동
+                  Navigator.pushReplacementNamed(context, '/home');
+                }
+              }
+            } catch (e) {
+              print('Google 로그인 중 오류 발생: $e');
+              // 에러 처리...
+            } finally {
+              setState(() => _isLoading = false);
+            }
+          },
+          icon: FontAwesomeIcons.google,
+          text: "Google로 계속하기",
+          color: Colors.white,
+          textColor: Colors.black87,
+          borderColor: Colors.grey[300],
+        ),
+        const SizedBox(height: 16),
+
+        // Facebook 로그인 버튼
         _buildSocialButton(
           onPressed: () async {
             setState(() => _isLoading = true);
             try {
               final result = await _facebookAuthService.signInWithFacebook();
               if (result != null) {
-                // 추가 정보 입력 화면으로 이동
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => FacebookAdditionalInfoScreen(
-                      userCredential: result.userCredential,
-                      facebookUserData: result.userData,
+                // 기존 회원인지 확인
+                final needsInfo = await _facebookAuthService.needsAdditionalInfo(result.userCredential.user!.uid);
+
+                if (needsInfo) {
+                  // 추가 정보가 필요한 경우에만 입력 화면으로 이동
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => FacebookAdditionalInfoScreen(
+                        userCredential: result.userCredential,
+                        facebookUserData: result.userData,
+                      ),
                     ),
-                  ),
-                );
+                  );
+                } else {
+                  // 기존 회원인 경우 메인 화면으로 이동
+                  Navigator.pushReplacementNamed(context, '/home');
+                }
               }
             } catch (e) {
               print('Facebook 로그인 중 오류 발생: $e');
-              // 에러 처리를 위한 다이얼로그 표시
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: Text('로그인 오류'),
-                  content: Text('Facebook 로그인 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: Text('확인'),
-                    ),
-                  ],
-                ),
-              );
+              // 에러 처리...
             } finally {
               setState(() => _isLoading = false);
             }
@@ -123,18 +161,6 @@ class _LoginScreenState extends State<LoginScreen> {
           text: "Facebook으로 계속하기",
           color: Color(0xFF1877F2),
           textColor: Colors.white,
-        ),
-        const SizedBox(height: 16),
-        // Google 로그인 버튼
-        _buildSocialButton(
-          onPressed: () {
-            // Google 로그인 구현
-          },
-          icon: FontAwesomeIcons.google,
-          text: "Google로 계속하기",
-          color: Colors.white,
-          textColor: Colors.black87,
-          borderColor: Colors.grey[300],
         ),
       ],
     );

@@ -3,45 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  Future<UserCredential?> signInWithGoogleWeb() async {
-    // Google Auth Provider 생성
-    GoogleAuthProvider googleProvider = GoogleAuthProvider();
-
-    // 추가 스코프 설정 (필요한 경우)
-    googleProvider.addScope('https://www.googleapis.com/auth/contacts.readonly');
-
-    try {
-      final UserCredential userCredential =
-      await FirebaseAuth.instance.signInWithPopup(googleProvider);
-      // 또는 리디렉션 방식 사용:
-      // await FirebaseAuth.instance.signInWithRedirect(googleProvider);
-      return userCredential;
-    } catch (e) {
-      print('Google 로그인 실패: $e');
-      return null;
-    }
-  }
-
-  Future<UserCredential?> signInWithFacebookWeb() async {
-    // Facebook Auth Provider 생성
-    FacebookAuthProvider facebookProvider = FacebookAuthProvider();
-
-    // 추가 권한 요청 (필요한 경우)
-    facebookProvider.addScope('email');
-    facebookProvider.addScope('public_profile');
-
-    try {
-      final UserCredential userCredential =
-      await FirebaseAuth.instance.signInWithPopup(facebookProvider);
-      // 또는 리디렉션 방식 사용:
-      // await FirebaseAuth.instance.signInWithRedirect(facebookProvider);
-      return userCredential;
-    } catch (e) {
-      print('Facebook 로그인 실패: $e');
-      return null;
-    }
-  }
-
   // 회원가입
   Future<User?> signUp(String email, String password) async {
     try {
